@@ -50,74 +50,39 @@ export default function TeacherDashboard() {
 
   const menuItems = [
     {
-      title: "Mes étudiants",
-      description: "Gérer et suivre vos étudiants",
-      icon: "👥",
-      href: "/teacher/students",
-      color: "bg-blue-50 border-blue-200 hover:bg-blue-100"
-    },
-    {
       title: "Tableau de bord",
-      description: "Vue d'ensemble des progrès des étudiants",
+      description: "Vue d'ensemble de votre activité",
       icon: "📊",
       href: "/teacher/dashboard",
-      color: "bg-green-50 border-green-200 hover:bg-green-100"
-    },
-    {
-      title: "Nouvel étudiant",
-      description: "Processus d'intégration d'un nouvel étudiant",
-      icon: "➕",
-      href: "/teacher/new-student",
-      color: "bg-purple-50 border-purple-200 hover:bg-purple-100"
-    },
-    {
-      title: "Ressources",
-      description: "Explorateur de ressources pédagogiques",
-      icon: "📚",
-      href: "/teacher/resources",
-      color: "bg-orange-50 border-orange-200 hover:bg-orange-100"
-    },
-    {
-      title: "Générer un code",
-      description: "Créer un code lié à la plateforme de paiement",
-      icon: "🔐",
-      href: "/teacher/generate-code",
       color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
     },
     {
+      title: "Mes étudiants",
+      description: "Gérer et générer des codes d'accès",
+      icon: "👥",
+      href: "/teacher/my-students",
+      color: "bg-blue-50 border-blue-200 hover:bg-blue-100"
+    },
+    {
       title: "Calendrier des cours",
-      description: "Planification et reprogrammation",
-      icon: "📅",
+      description: "Gérer disponibilités et demandes de créneaux",
+      icon: "�",
       href: "/teacher/calendar",
-      color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100"
+      color: "bg-green-50 border-green-200 hover:bg-green-100"
+    },
+    {
+      title: "Ressources pédagogiques",
+      description: "Partager liens et documents avec vos étudiants",
+      icon: "�",
+      href: "/teacher/resources",
+      color: "bg-orange-50 border-orange-200 hover:bg-orange-100"
     },
     {
       title: "Mon compte",
       description: "Paramètres et informations personnelles",
       icon: "⚙️",
       href: "/teacher/account",
-      color: "bg-pink-50 border-pink-200 hover:bg-pink-100"
-    },
-    {
-      title: "Historique des cours",
-      description: "Consulter l'historique de vos cours",
-      icon: "📖",
-      href: "/teacher/course-history",
-      color: "bg-teal-50 border-teal-200 hover:bg-teal-100"
-    },
-    {
-      title: "Créneaux de disponibilité",
-      description: "Gérer vos créneaux disponibles",
-      icon: "🕐",
-      href: "/teacher/availability",
-      color: "bg-red-50 border-red-200 hover:bg-red-100"
-    },
-    {
-      title: "Validation des créneaux",
-      description: "Valider les demandes de créneaux",
-      icon: "✅",
-      href: "/teacher/slot-validation",
-      color: "bg-gray-50 border-gray-200 hover:bg-gray-100"
+      color: "bg-purple-50 border-purple-200 hover:bg-purple-100"
     }
   ];
 
@@ -187,7 +152,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="text-2xl font-bold text-indigo-600 mb-2">0</div>
             <div className="text-gray-600 text-sm">Étudiants actifs</div>
@@ -201,7 +166,11 @@ export default function TeacherDashboard() {
             <div className="text-gray-600 text-sm">Créneaux en attente</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="text-2xl font-bold text-orange-600 mb-2">0€</div>
+            <div className="text-2xl font-bold text-orange-600 mb-2">0</div>
+            <div className="text-gray-600 text-sm">Ressources partagées</div>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
+            <div className="text-2xl font-bold text-blue-600 mb-2">0€</div>
             <div className="text-gray-600 text-sm">Revenus ce mois</div>
           </div>
         </div>

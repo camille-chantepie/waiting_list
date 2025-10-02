@@ -50,67 +50,46 @@ export default function StudentDashboard() {
 
   const menuItems = [
     {
-      title: "Ajouter un professeur",
-      description: "Rechercher et ajouter un nouveau professeur",
-      icon: "👨‍🏫",
-      href: "/student/add-teacher",
+      title: "Tableau de bord",
+      description: "Aperçu de votre activité et progression",
+      icon: "�",
+      href: "/student/dashboard",
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100"
     },
     {
-      title: "Messagerie",
-      description: "Communiquer avec vos professeurs",
-      icon: "💬",
-      href: "/student/messages",
+      title: "Ajouter un professeur",
+      description: "Connectez-vous avec un code professeur",
+      icon: "�‍🏫",
+      href: "/student/add-teacher",
       color: "bg-green-50 border-green-200 hover:bg-green-100"
     },
     {
       title: "Calendrier des cours",
-      description: "Gérer vos créneaux et rendez-vous",
+      description: "Proposer des créneaux à vos professeurs",
       icon: "📅",
       href: "/student/calendar",
       color: "bg-purple-50 border-purple-200 hover:bg-purple-100"
     },
     {
       title: "Ressources pédagogiques",
-      description: "Accéder aux cours et matériaux",
+      description: "Documents et cours de vos professeurs",
       icon: "📚",
       href: "/student/resources",
       color: "bg-orange-50 border-orange-200 hover:bg-orange-100"
     },
     {
-      title: "Cours",
-      description: "Vos cours planifiés et historique",
-      icon: "🎓",
-      href: "/student/courses",
-      color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
-    },
-    {
-      title: "Fiches",
-      description: "Fiches de révision et résumés",
-      icon: "📄",
-      href: "/student/sheets",
-      color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100"
-    },
-    {
-      title: "Leçons",
-      description: "Contenu des leçons et supports",
-      icon: "📖",
-      href: "/student/lessons",
-      color: "bg-pink-50 border-pink-200 hover:bg-pink-100"
-    },
-    {
       title: "Exercices & corrections",
-      description: "Exercices pratiques et leurs corrections",
+      description: "Travaux envoyés par vos professeurs",
       icon: "✏️",
       href: "/student/exercises",
       color: "bg-teal-50 border-teal-200 hover:bg-teal-100"
     },
     {
-      title: "Tableau de bord",
-      description: "Vos résultats et suivi de progression",
-      icon: "📊",
-      href: "/student/dashboard",
-      color: "bg-red-50 border-red-200 hover:bg-red-100"
+      title: "Messagerie",
+      description: "Communiquer avec vos professeurs",
+      icon: "�",
+      href: "/student/messages",
+      color: "bg-pink-50 border-pink-200 hover:bg-pink-100"
     }
   ];
 
