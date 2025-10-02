@@ -1,0 +1,56 @@
+
+> waiting_list@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ⚠ Invalid next.config.js options detected: 
+ ⚠     Unrecognized key(s) in object: 'appDir' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 2.8s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.9s (504 modules)
+ GET / 200 in 3109ms
+ ✓ Compiled in 190ms (259 modules)
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ⚠ Invalid next.config.js options detected: 
+ ⚠     Unrecognized key(s) in object: 'appDir' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 2.3s
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ⚠ Invalid next.config.js options detected: 
+ ⚠     Unrecognized key(s) in object: 'appDir' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 1741ms
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+node:internal/modules/package_json_reader:83
+        throw new ERR_INVALID_PACKAGE_CONFIG(
+              ^
+
+Error [ERR_INVALID_PACKAGE_CONFIG]: Invalid package config /Users/camillechantepie/waiting_list/package.json while importing /Users/camillechantepie/waiting_list/next.config.js. Unexpected end of JSON input
+    at Object.read (node:internal/modules/package_json_reader:83:15)
+    at getPackageScopeConfig (node:internal/modules/esm/package_config:35:45)
+    at getPackageType (node:internal/modules/esm/resolve:749:25)
+    at Object.getFileProtocolModuleFormat [as file:] (node:internal/modules/esm/get_format:95:25)
+    at defaultGetFormatWithoutErrors (node:internal/modules/esm/get_format:190:36)
+    at defaultResolve (node:internal/modules/esm/resolve:1193:13)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:540:12)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:509:25)
+    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:239:38)
+    at ModuleLoader.import (node:internal/modules/esm/loader:472:34) {
+  code: 'ERR_INVALID_PACKAGE_CONFIG'
+}
+
+Node.js v20.17.0
+[?25h
