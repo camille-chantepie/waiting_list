@@ -36,7 +36,7 @@ export default function StudentMessages() {
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-4">Accès non autorisé</h2>
           <Link href="/" className="text-blue-600 hover:text-blue-800">
-            Retour à l'accueil
+            Retour à l&apos;accueil
           </Link>
         </div>
       </div>

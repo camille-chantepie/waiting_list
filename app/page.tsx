@@ -140,7 +140,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <p className="text-gray-600 italic">
-                    "Akadêmos m'a fait gagner 3 heures par semaine dans la gestion de mes élèves. L'interface est si intuitive !"
+                    &ldquo;Akadêmos m&apos;a fait gagner 3 heures par semaine dans la gestion de mes élèves. L&apos;interface est si intuitive !&rdquo;
                   </p>
                 </div>
 
@@ -162,7 +162,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <p className="text-gray-600 italic">
-                    "Mes cours sont maintenant mieux organisés et mes élèves sont plus motivés grâce au suivi en temps réel."
+                    &ldquo;Mes cours sont maintenant mieux organisés et mes élèves sont plus motivés grâce au suivi en temps réel.&rdquo;
                   </p>
                 </div>
 
@@ -184,7 +184,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <p className="text-gray-600 italic">
-                    "Je peux enfin suivre ma progression facilement ! Mon prof me donne des retours personnalisés super rapidement."
+                    &ldquo;Je peux enfin suivre ma progression facilement ! Mon prof me donne des retours personnalisés super rapidement.&rdquo;
                   </p>
                 </div>
               </div>
