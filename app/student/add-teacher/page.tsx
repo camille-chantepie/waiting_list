@@ -5,8 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 export default function AddTeacher() {
@@ -64,17 +64,29 @@ export default function AddTeacher() {
     setMessage(null);
 
     try {
+      // Vérification préliminaire
+      if (!user || !user.id) {
+        setMessage({ type: 'error', text: 'Vous devez être connecté pour ajouter un professeur.' });
+        setSubmitting(false);
+        return;
+      }
+
       if (teacherCode.length < 6) {
         setMessage({ type: 'error', text: 'Le code doit contenir au moins 6 caractères' });
         setSubmitting(false);
         return;
       }
 
+      console.log('Validation du code:', teacherCode);
+      console.log('Utilisateur connecté:', user.id);
+      
       // Étape 1: Valider le code professeur
       const teacherData = await validateTeacherCode(teacherCode);
       
+      console.log('Résultat validation:', teacherData);
+      
       if (!teacherData) {
-        setMessage({ type: 'error', text: 'Code invalide ou expiré. Vérifiez avec votre professeur.' });
+        setMessage({ type: 'error', text: 'Code invalide ou expiré. Codes valides pour test: ABC123, DEF456, GHI789' });
         setSubmitting(false);
         return;
       }
@@ -96,46 +108,57 @@ export default function AddTeacher() {
       }
       
     } catch (error) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue. Veuillez réessayer.' });
+      console.error('Erreur dans handleSubmit:', error);
+      setMessage({ type: 'error', text: `Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}. Veuillez réessayer.` });
     } finally {
       setSubmitting(false);
     }
   };
 
   const validateTeacherCode = async (code: string) => {
-    // TODO: Remplacer par une vraie requête Supabase
-    // const { data, error } = await supabase
-    //   .from('teacher_codes')
-    //   .select(`
-    //     teacher_id,
-    //     expires_at,
-    //     teachers:teacher_id (
-    //       id,
-    //       user_metadata->nom,
-    //       user_metadata->prenom,
-    //       user_metadata->matiere
-    //     )
-    //   `)
-    //   .eq('code', code)
-    //   .eq('is_used', false)
-    //   .gt('expires_at', new Date().toISOString())
-    //   .single();
+    try {
+      // TODO: Remplacer par une vraie requête Supabase
+      // const { data, error } = await supabase
+      //   .from('teacher_codes')
+      //   .select(`
+      //     teacher_id,
+      //     expires_at,
+      //     teachers:teacher_id (
+      //       id,
+      //       user_metadata->nom,
+      //       user_metadata->prenom,
+      //       user_metadata->matiere
+      //     )
+      //   `)
+      //   .eq('code', code)
+      //   .eq('is_used', false)
+      //   .gt('expires_at', new Date().toISOString())
+      //   .single();
 
-    // Simulation pour les tests
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Codes de test valides
-    const validCodes = {
-      'ABC123': { id: '1', prenom: 'Marie', nom: 'Dupont', matiere: 'Mathématiques' },
-      'DEF456': { id: '2', prenom: 'Pierre', nom: 'Martin', matiere: 'Physique' },
-      'GHI789': { id: '3', prenom: 'Sophie', nom: 'Durand', matiere: 'Français' }
-    };
+      // Simulation pour les tests
+      console.log('Validation du code:', code);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Codes de test valides
+      const validCodes = {
+        'ABC123': { id: '1', prenom: 'Marie', nom: 'Dupont', matiere: 'Mathématiques' },
+        'DEF456': { id: '2', prenom: 'Pierre', nom: 'Martin', matiere: 'Physique' },
+        'GHI789': { id: '3', prenom: 'Sophie', nom: 'Durand', matiere: 'Français' }
+      };
 
-    return validCodes[code as keyof typeof validCodes] || null;
+      const result = validCodes[code.toUpperCase() as keyof typeof validCodes] || null;
+      console.log('Résultat de validation:', result);
+      return result;
+    } catch (error) {
+      console.error('Erreur dans validateTeacherCode:', error);
+      throw error;
+    }
   };
 
   const createStudentTeacherConnection = async (studentId: string, teacherData: any) => {
     try {
+      console.log('Création de connexion pour:', { studentId, teacherData });
+      
       // TODO: Remplacer par une vraie insertion Supabase
       // const { data, error } = await supabase
       //   .from('student_teacher_connections')
@@ -147,6 +170,15 @@ export default function AddTeacher() {
       //   });
       
       // if (error) throw error;
+
+      // Vérifications de base
+      if (!studentId) {
+        return { success: false, error: 'Utilisateur non connecté' };
+      }
+      
+      if (!teacherData || !teacherData.id) {
+        return { success: false, error: 'Données professeur invalides' };
+      }
 
       // Marquer le code comme utilisé
       // await supabase
@@ -166,10 +198,11 @@ export default function AddTeacher() {
         connected_at: new Date().toISOString()
       }]);
 
+      console.log('Connexion créée avec succès');
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de la création de la connexion:', error);
-      return { success: false, error: 'Impossible de créer la connexion' };
+      return { success: false, error: error instanceof Error ? error.message : 'Impossible de créer la connexion' };
     }
   };
 
