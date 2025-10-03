@@ -13,11 +13,12 @@ export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState({
-    calendar: 2, // Nouvelles demandes de créneaux
-    students: 0, // Nouveaux étudiants
-    messages: 1, // Nouveaux messages
-    resources: 0, // Nouvelles ressources partagées
-    notes: 0 // Nouvelles notes à corriger
+    students: 0,
+    calendar: 0,
+    messages: 0,
+    resources: 0,
+    notes: 0,
+    proposals: 0
   });
 
   useEffect(() => {
@@ -32,16 +33,32 @@ export default function TeacherDashboard() {
     getSession();
   }, []);
 
-  const loadNotifications = async () => {
-    // TODO: Charger les vraies notifications depuis Supabase
-    // Simulation des notifications pour la démo
-    setNotifications({
-      calendar: 2, // 2 nouvelles demandes de créneaux
-      students: 0,
-      messages: 1, // 1 nouveau message
-      resources: 0,
-      notes: 0
-    });
+    const loadNotifications = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Charger les notifications depuis localStorage
+      const storedNotifications = localStorage.getItem(`notifications_teacher_${user.id}`);
+      let newNotifications = { students: 0, calendar: 0, messages: 2, resources: 0, notes: 0, proposals: 0 };
+      
+      if (storedNotifications) {
+        const parsed = JSON.parse(storedNotifications);
+        newNotifications = { ...newNotifications, ...parsed };
+      }
+      
+      setNotifications(newNotifications);
+      console.log('Notifications chargées:', newNotifications);
+      
+      // TODO: Remplacer par Supabase
+      // const { data } = await supabase
+      //   .from('notifications')
+      //   .select('type')
+      //   .eq('user_id', user.id)
+      //   .eq('is_read', false);
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des notifications:', error);
+    }
   };
 
   const handleLogout = async () => {
@@ -200,7 +217,7 @@ export default function TeacherDashboard() {
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-800">Demandes en attente</h3>
-              <Link href="/teacher/calendar" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+              <Link href="/teacher/proposals" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                 Voir tout →
               </Link>
             </div>
@@ -286,6 +303,14 @@ export default function TeacherDashboard() {
                 <div className="text-sm text-gray-600">Partager du contenu</div>
               </div>
               {notifications.resources > 0 && <NotificationBadge count={notifications.resources} />}
+            </Link>
+            <Link href="/teacher/proposals" className="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors border border-yellow-200 relative">
+              <span className="text-2xl mr-3">⏰</span>
+              <div>
+                <div className="font-semibold text-gray-800">Propositions</div>
+                <div className="text-sm text-gray-600">Créneaux proposés</div>
+              </div>
+              {notifications.proposals > 0 && <NotificationBadge count={notifications.proposals} />}
             </Link>
             <Link href="/teacher/notes" className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200 relative">
               <span className="text-2xl mr-3">📊</span>

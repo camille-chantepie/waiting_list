@@ -65,6 +65,14 @@ export default function Calendar() {
     setUploading(true);
     
     try {
+      // Trouver les données du professeur sélectionné
+      const selectedTeacherData = connectedTeachers.find(t => t.id === selectedTeacher);
+      if (!selectedTeacherData) {
+        alert('Professeur non trouvé');
+        setUploading(false);
+        return;
+      }
+
       // TODO: Upload files to storage
       const uploadedFiles = [];
       
@@ -87,11 +95,14 @@ export default function Calendar() {
 
       // TODO: Save proposal with attached files
       const proposalData = {
+        id: `proposal_${Date.now()}`,
         studentId: user.id,
+        studentName: `${user.user_metadata?.prenom || 'Étudiant'} ${user.user_metadata?.nom || ''}`.trim(),
         teacherId: selectedTeacher,
+        teacherName: selectedTeacherData ? `${selectedTeacherData.prenom} ${selectedTeacherData.nom}` : 'Professeur',
+        subject: selectedTeacherData?.matiere || subject,
         date: selectedDate,
         time: selectedTime,
-        subject,
         message,
         attachedFiles: uploadedFiles,
         status: 'pending',
@@ -100,7 +111,28 @@ export default function Calendar() {
       
       console.log('Proposal data:', proposalData);
       
-      // TODO: Send notification to teacher
+      // Sauvegarder pour l'étudiant
+      const existingStudentProposals = JSON.parse(localStorage.getItem(`proposals_student_${user.id}`) || '[]');
+      existingStudentProposals.push(proposalData);
+      localStorage.setItem(`proposals_student_${user.id}`, JSON.stringify(existingStudentProposals));
+      
+      // Sauvegarder pour le professeur (simulation de notification)
+      const existingTeacherProposals = JSON.parse(localStorage.getItem(`proposals_teacher_${selectedTeacher}`) || '[]');
+      existingTeacherProposals.push({
+        ...proposalData,
+        isNew: true, // Marquer comme nouvelle proposition
+        receivedAt: new Date().toISOString()
+      });
+      localStorage.setItem(`proposals_teacher_${selectedTeacher}`, JSON.stringify(existingTeacherProposals));
+      
+      // Incrémenter le compteur de notifications pour le professeur
+      const teacherNotifications = JSON.parse(localStorage.getItem(`notifications_teacher_${selectedTeacher}`) || '{"newProposals": 0}');
+      teacherNotifications.newProposals = (teacherNotifications.newProposals || 0) + 1;
+      localStorage.setItem(`notifications_teacher_${selectedTeacher}`, JSON.stringify(teacherNotifications));
+      
+      console.log('Proposition sauvegardée pour étudiant et professeur');
+      
+      // TODO: Send notification to teacher via Supabase
       // await supabase.from('notifications').insert({
       //   user_id: selectedTeacher,
       //   type: 'new_slot_proposal',
@@ -110,7 +142,7 @@ export default function Calendar() {
       //   is_read: false
       // });
 
-      alert(`Proposition envoyée avec ${uploadedFiles.length} fichier(s) ! Le professeur recevra automatiquement vos documents.`);
+      alert(`✅ Proposition envoyée à ${selectedTeacherData.prenom} ${selectedTeacherData.nom} !`);
       setShowModal(false);
       resetForm();
       
