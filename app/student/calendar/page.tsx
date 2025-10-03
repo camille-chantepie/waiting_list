@@ -20,6 +20,31 @@ export default function Calendar() {
   const [message, setMessage] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [connectedTeachers, setConnectedTeachers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+      if (session?.user) {
+        await loadConnectedTeachers(session.user.id);
+      }
+      setLoading(false);
+    };
+    getSession();
+  }, []);
+
+  const loadConnectedTeachers = async (userId: string) => {
+    try {
+      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
+      if (storedTeachers) {
+        const teachers = JSON.parse(storedTeachers);
+        setConnectedTeachers(teachers);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des professeurs:', error);
+    }
+  };
 
   useEffect(() => {
     const getSession = async () => {
@@ -303,8 +328,21 @@ export default function Calendar() {
                   required
                 >
                   <option value="">Sélectionnez un professeur</option>
-                  <option value="teacher1">Aucun professeur disponible</option>
+                  {connectedTeachers.length === 0 ? (
+                    <option value="" disabled>Aucun professeur connecté</option>
+                  ) : (
+                    connectedTeachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.prenom} {teacher.nom} - {teacher.matiere}
+                      </option>
+                    ))
+                  )}
                 </select>
+                {connectedTeachers.length === 0 && (
+                  <p className="text-sm text-orange-600 mt-1">
+                    💡 <Link href="/student/add-teacher" className="underline">Ajoutez d&apos;abord un professeur</Link> pour pouvoir proposer des créneaux
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

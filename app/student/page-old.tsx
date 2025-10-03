@@ -34,12 +34,12 @@ export default function StudentDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState({
+    dashboard: 0,
     calendar: 1, // Réponse d'un prof à un créneau proposé
     resources: 3, // Nouvelles ressources + exercices reçus
     messages: 3, // Messages non lus
     notes: 1 // Nouvelles notes ajoutées
   });
-  const [connectedTeachersCount, setConnectedTeachersCount] = useState(0);
 
   useEffect(() => {
     const getSession = async () => {
@@ -47,7 +47,6 @@ export default function StudentDashboard() {
       setUser(session?.user || null);
       if (session?.user) {
         loadNotifications();
-        loadConnectedTeachersCount(session.user.id);
       }
       setLoading(false);
     };
@@ -56,24 +55,18 @@ export default function StudentDashboard() {
 
   const loadNotifications = async () => {
     // Mock data - replace with actual Supabase queries
+    // This would typically query for:
+    // - Unread teacher responses to slot proposals
+    // - New resources shared by teachers
+    // - New exercises assigned
+    // - Unread messages from teachers
     setNotifications({
+      dashboard: 0,
       calendar: 1, // Réponse acceptée pour le créneau du 15/01
       resources: 3, // Nouveau chapitre de maths + exercices physique + devoir chimie
       messages: 3, // Messages de 2 professeurs
       notes: 1 // Nouvelles notes ajoutées
     });
-  };
-
-  const loadConnectedTeachersCount = async (userId: string) => {
-    try {
-      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
-      if (storedTeachers) {
-        const teachers = JSON.parse(storedTeachers);
-        setConnectedTeachersCount(teachers.length);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement du nombre de professeurs:', error);
-    }
   };
 
   const handleLogout = async () => {
@@ -104,11 +97,12 @@ export default function StudentDashboard() {
 
   const menuItems: MenuItem[] = [
     {
-      title: "Mes professeurs",
-      description: "Gérer mes connexions avec les professeurs",
-      icon: "👥",
-      href: "/student/my-teachers",
-      color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+      title: "Tableau de bord",
+      description: "Aperçu de votre activité et progression",
+      icon: "🎯",
+      href: "/student/dashboard",
+      color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
+      notificationKey: "dashboard"
     },
     {
       title: "Ajouter un professeur",
@@ -144,7 +138,7 @@ export default function StudentDashboard() {
     {
       title: "Notes & Progression",
       description: "Suivi des notes et analytics de progression",
-      icon: "📊",
+      icon: "�",
       href: "/student/notes-analytics",
       color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
       notificationKey: "notes"
@@ -222,8 +216,8 @@ export default function StudentDashboard() {
         {/* Quick Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="text-2xl font-bold text-blue-600 mb-2">{connectedTeachersCount}</div>
-            <div className="text-gray-600 text-sm">Professeurs connectés</div>
+            <div className="text-2xl font-bold text-blue-600 mb-2">0</div>
+            <div className="text-gray-600 text-sm">Professeurs</div>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="text-2xl font-bold text-green-600 mb-2">0</div>

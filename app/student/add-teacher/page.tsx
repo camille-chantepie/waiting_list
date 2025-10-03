@@ -97,12 +97,17 @@ export default function AddTeacher() {
       if (connectionResult.success) {
         setMessage({ 
           type: 'success', 
-          text: `Félicitations ! Vous êtes maintenant connecté à ${teacherData.prenom} ${teacherData.nom} (${teacherData.matiere})` 
+          text: `Félicitations ! Vous êtes maintenant connecté à ${teacherData.prenom} ${teacherData.nom} (${teacherData.matiere}). Redirection...` 
         });
         setTeacherCode("");
         
         // Recharger la liste des professeurs connectés
         await loadConnectedTeachers(user.id);
+        
+        // Redirection vers Mes professeurs après 2 secondes
+        setTimeout(() => {
+          window.location.href = '/student/my-teachers';
+        }, 2000);
       } else {
         setMessage({ type: 'error', text: connectionResult.error || 'Une erreur est survenue lors de la connexion.' });
       }
