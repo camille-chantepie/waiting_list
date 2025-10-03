@@ -9,18 +9,65 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Interface pour les éléments du menu
+interface MenuItem {
+  title: string;
+  description: string;
+  icon: string;
+  href: string;
+  color: string;
+  notificationKey?: string;
+}
+
+// Composant NotificationBadge
+const NotificationBadge = ({ count }: { count: number }) => {
+  if (count === 0) return null;
+  
+  return (
+    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+      {count > 9 ? '9+' : count}
+    </span>
+  );
+};
+
 export default function StudentDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState({
+    dashboard: 0,
+    calendar: 1, // Réponse d'un prof à un créneau proposé
+    resources: 3, // Nouvelles ressources + exercices reçus
+    messages: 3, // Messages non lus
+    notes: 1 // Nouvelles notes ajoutées
+  });
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        loadNotifications();
+      }
       setLoading(false);
     };
     getSession();
   }, []);
+
+  const loadNotifications = async () => {
+    // Mock data - replace with actual Supabase queries
+    // This would typically query for:
+    // - Unread teacher responses to slot proposals
+    // - New resources shared by teachers
+    // - New exercises assigned
+    // - Unread messages from teachers
+    setNotifications({
+      dashboard: 0,
+      calendar: 1, // Réponse acceptée pour le créneau du 15/01
+      resources: 3, // Nouveau chapitre de maths + exercices physique + devoir chimie
+      messages: 3, // Messages de 2 professeurs
+      notes: 1 // Nouvelles notes ajoutées
+    });
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -48,18 +95,19 @@ export default function StudentDashboard() {
     );
   }
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       title: "Tableau de bord",
       description: "Aperçu de votre activité et progression",
-      icon: "�",
+      icon: "🎯",
       href: "/student/dashboard",
-      color: "bg-blue-50 border-blue-200 hover:bg-blue-100"
+      color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
+      notificationKey: "dashboard"
     },
     {
       title: "Ajouter un professeur",
       description: "Connectez-vous avec un code professeur",
-      icon: "�‍🏫",
+      icon: "👨‍🏫",
       href: "/student/add-teacher",
       color: "bg-green-50 border-green-200 hover:bg-green-100"
     },
@@ -68,42 +116,32 @@ export default function StudentDashboard() {
       description: "Proposer des créneaux à vos professeurs",
       icon: "📅",
       href: "/student/calendar",
-      color: "bg-purple-50 border-purple-200 hover:bg-purple-100"
+      color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
+      notificationKey: "calendar"
     },
     {
-      title: "Ressources pédagogiques",
-      description: "Documents et cours de vos professeurs",
+      title: "Ressources & Exercices",
+      description: "Documents, images, PDF et liens de vos profs",
       icon: "📚",
-      href: "/student/resources",
-      color: "bg-orange-50 border-orange-200 hover:bg-orange-100"
+      href: "/student/resources-exercises",
+      color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
+      notificationKey: "resources"
     },
     {
-      title: "Exercices & corrections",
-      description: "Travaux envoyés par vos professeurs",
-      icon: "✏️",
-      href: "/student/exercises",
-      color: "bg-teal-50 border-teal-200 hover:bg-teal-100"
-    },
-    {
-      title: "Mes notes",
-      description: "Saisir et suivre vos résultats",
-      icon: "📊",
-      href: "/student/notes",
-      color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
-    },
-    {
-      title: "Analytics & Progression",
-      description: "Graphiques de votre évolution",
-      icon: "📈",
-      href: "/student/analytics",
-      color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
-    },
-    {
-      title: "Messagerie",
+      title: "Messages",
       description: "Communiquer avec vos professeurs",
-      icon: "�",
+      icon: "💬",
       href: "/student/messages",
-      color: "bg-pink-50 border-pink-200 hover:bg-pink-100"
+      color: "bg-pink-50 border-pink-200 hover:bg-pink-100",
+      notificationKey: "messages"
+    },
+    {
+      title: "Notes & Progression",
+      description: "Suivi des notes et analytics de progression",
+      icon: "�",
+      href: "/student/notes-analytics",
+      color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
+      notificationKey: "notes"
     }
   ];
 
@@ -157,7 +195,7 @@ export default function StudentDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item, index) => (
             <Link key={index} href={item.href}>
-              <div className={`${item.color} border-2 rounded-xl p-6 transition-all duration-300 cursor-pointer transform hover:scale-105 shadow-sm hover:shadow-md`}>
+              <div className={`${item.color} border-2 rounded-xl p-6 transition-all duration-300 cursor-pointer transform hover:scale-105 shadow-sm hover:shadow-md relative`}>
                 <div className="flex items-center mb-4">
                   <span className="text-3xl mr-3">{item.icon}</span>
                   <h3 className="text-lg font-semibold text-gray-800">
@@ -167,6 +205,9 @@ export default function StudentDashboard() {
                 <p className="text-gray-600 text-sm">
                   {item.description}
                 </p>
+                {item.notificationKey && notifications[item.notificationKey as keyof typeof notifications] > 0 && (
+                  <NotificationBadge count={notifications[item.notificationKey as keyof typeof notifications]} />
+                )}
               </div>
             </Link>
           ))}

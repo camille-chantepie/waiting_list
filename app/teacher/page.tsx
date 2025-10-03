@@ -12,19 +12,51 @@ const supabase = createClient(
 export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState({
+    calendar: 2, // Nouvelles demandes de créneaux
+    students: 0, // Nouveaux étudiants
+    messages: 1, // Nouveaux messages
+    resources: 0, // Nouvelles ressources partagées
+    notes: 0 // Nouvelles notes à corriger
+  });
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        loadNotifications();
+      }
       setLoading(false);
     };
     getSession();
   }, []);
 
+  const loadNotifications = async () => {
+    // TODO: Charger les vraies notifications depuis Supabase
+    // Simulation des notifications pour la démo
+    setNotifications({
+      calendar: 2, // 2 nouvelles demandes de créneaux
+      students: 0,
+      messages: 1, // 1 nouveau message
+      resources: 0,
+      notes: 0
+    });
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
+  };
+
+  // Composant Badge de notification
+  const NotificationBadge = ({ count }: { count: number }) => {
+    if (count === 0) return null;
+    return (
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
+        {count > 9 ? '9+' : count}
+      </span>
+    );
   };
 
   if (loading) {
@@ -222,29 +254,48 @@ export default function TeacherDashboard() {
         {/* Quick Actions */}
         <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border">
           <h3 className="text-xl font-semibold text-gray-800 mb-6">Actions rapides</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Link href="/teacher/my-students" className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link href="/teacher/my-students" className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200 relative">
               <span className="text-2xl mr-3">👥</span>
               <div>
                 <div className="font-semibold text-gray-800">Mes étudiants</div>
                 <div className="text-sm text-gray-600">Gérer et ajouter</div>
               </div>
+              {notifications.students > 0 && <NotificationBadge count={notifications.students} />}
             </Link>
-            <Link href="/teacher/calendar" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200">
+            <Link href="/teacher/calendar" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200 relative">
               <span className="text-2xl mr-3">📅</span>
               <div>
                 <div className="font-semibold text-gray-800">Calendrier</div>
                 <div className="text-sm text-gray-600">Gérer mes cours</div>
               </div>
+              {notifications.calendar > 0 && <NotificationBadge count={notifications.calendar} />}
             </Link>
-            <Link href="/teacher/resources" className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors border border-orange-200">
+            <Link href="/teacher/messages" className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 relative">
+              <span className="text-2xl mr-3">💬</span>
+              <div>
+                <div className="font-semibold text-gray-800">Messages</div>
+                <div className="text-sm text-gray-600">Échanger avec les élèves</div>
+              </div>
+              {notifications.messages > 0 && <NotificationBadge count={notifications.messages} />}
+            </Link>
+            <Link href="/teacher/resources" className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors border border-orange-200 relative">
               <span className="text-2xl mr-3">📚</span>
               <div>
                 <div className="font-semibold text-gray-800">Ressources</div>
                 <div className="text-sm text-gray-600">Partager du contenu</div>
               </div>
+              {notifications.resources > 0 && <NotificationBadge count={notifications.resources} />}
             </Link>
-            <Link href="/teacher/account" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200">
+            <Link href="/teacher/notes" className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200 relative">
+              <span className="text-2xl mr-3">📊</span>
+              <div>
+                <div className="font-semibold text-gray-800">Notes</div>
+                <div className="text-sm text-gray-600">Gérer les notes élèves</div>
+              </div>
+              {notifications.notes > 0 && <NotificationBadge count={notifications.notes} />}
+            </Link>
+            <Link href="/teacher/account" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200 relative">
               <span className="text-2xl mr-3">⚙️</span>
               <div>
                 <div className="font-semibold text-gray-800">Mon compte</div>
