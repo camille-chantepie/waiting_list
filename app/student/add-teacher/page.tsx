@@ -31,7 +31,17 @@ export default function AddTeacher() {
 
   const loadConnectedTeachers = async (userId: string) => {
     try {
-      // Simuler le chargement des professeurs connectés
+      // Charger depuis localStorage pour la démo
+      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
+      if (storedTeachers) {
+        const teachers = JSON.parse(storedTeachers);
+        setConnectedTeachers(teachers);
+        console.log('Professeurs connectés chargés depuis localStorage:', teachers);
+      } else {
+        setConnectedTeachers([]);
+        console.log('Aucun professeur connecté trouvé');
+      }
+      
       // TODO: Remplacer par une vraie requête Supabase
       // const { data } = await supabase
       //   .from('student_teacher_connections')
@@ -46,8 +56,6 @@ export default function AddTeacher() {
       //   `)
       //   .eq('student_id', userId);
       
-      // Pour l'instant, on garde la liste vide
-      setConnectedTeachers([]);
     } catch (error) {
       console.error('Erreur lors du chargement des professeurs:', error);
     }
@@ -194,16 +202,29 @@ export default function AddTeacher() {
       // Simulation
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Ajouter le professeur à la liste locale pour l'affichage immédiat
-      setConnectedTeachers(prev => [...prev, {
+      // Sauvegarde en localStorage pour la persistance
+      const existingTeachers = JSON.parse(localStorage.getItem(`connectedTeachers_${studentId}`) || '[]');
+      const newTeacher = {
         id: teacherData.id,
         nom: teacherData.nom,
         prenom: teacherData.prenom,
         matiere: teacherData.matiere,
         connected_at: new Date().toISOString()
-      }]);
+      };
+      
+      // Vérifier si le professeur n'est pas déjà connecté
+      const alreadyConnected = existingTeachers.find((t: any) => t.id === teacherData.id);
+      if (alreadyConnected) {
+        return { success: false, error: 'Vous êtes déjà connecté à ce professeur' };
+      }
+      
+      existingTeachers.push(newTeacher);
+      localStorage.setItem(`connectedTeachers_${studentId}`, JSON.stringify(existingTeachers));
+      
+      // Ajouter le professeur à la liste locale pour l'affichage immédiat
+      setConnectedTeachers(prev => [...prev, newTeacher]);
 
-      console.log('Connexion créée avec succès');
+      console.log('Connexion créée avec succès et sauvegardée dans localStorage');
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de la création de la connexion:', error);
