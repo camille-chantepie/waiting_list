@@ -18,6 +18,8 @@ export default function Calendar() {
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const getSession = async () => {
@@ -35,13 +37,81 @@ export default function Calendar() {
 
   const handleSubmitProposal = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
     
-    // TODO: Implement API call to save proposal
-    console.log({ selectedDate, selectedTime, selectedTeacher, subject, message });
-    
-    alert("Proposition de créneau envoyée au professeur !");
-    setShowModal(false);
-    resetForm();
+    try {
+      // TODO: Upload files to storage
+      const uploadedFiles = [];
+      
+      if (attachedFiles.length > 0) {
+        for (const file of attachedFiles) {
+          // Simulate file upload
+          console.log(`Uploading ${file.name}...`);
+          // const { data: uploadData, error: uploadError } = await supabase.storage
+          //   .from('student-resources')
+          //   .upload(`${user.id}/${Date.now()}_${file.name}`, file);
+          
+          uploadedFiles.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: `simulated-url/${file.name}` // Placeholder URL
+          });
+        }
+      }
+
+      // TODO: Save proposal with attached files
+      const proposalData = {
+        studentId: user.id,
+        teacherId: selectedTeacher,
+        date: selectedDate,
+        time: selectedTime,
+        subject,
+        message,
+        attachedFiles: uploadedFiles,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('Proposal data:', proposalData);
+      
+      // TODO: Send notification to teacher
+      // await supabase.from('notifications').insert({
+      //   user_id: selectedTeacher,
+      //   type: 'new_slot_proposal',
+      //   title: 'Nouvelle proposition de créneau',
+      //   message: `${user.user_metadata?.prenom} ${user.user_metadata?.nom} propose un cours pour le ${selectedDate} à ${selectedTime}`,
+      //   data: proposalData,
+      //   is_read: false
+      // });
+
+      alert(`Proposition envoyée avec ${uploadedFiles.length} fichier(s) ! Le professeur recevra automatiquement vos documents.`);
+      setShowModal(false);
+      resetForm();
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi:', error);
+      alert('Erreur lors de l\'envoi de la proposition');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setAttachedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const resetForm = () => {
@@ -50,6 +120,7 @@ export default function Calendar() {
     setSelectedTeacher("");
     setSubject("");
     setMessage("");
+    setAttachedFiles([]);
   };
 
   if (loading) {
@@ -296,6 +367,68 @@ export default function Calendar() {
                 />
               </div>
 
+              {/* File Upload Section */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Joindre des documents (copies, exercices...)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <svg className="h-12 w-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="text-sm text-gray-600 font-medium">
+                      Cliquez pour ajouter des fichiers
+                    </span>
+                    <span className="text-xs text-gray-500 mt-1">
+                      PDF, Word, Images (max 10MB par fichier)
+                    </span>
+                  </label>
+                </div>
+
+                {/* File List */}
+                {attachedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      Fichiers joints ({attachedFiles.length})
+                    </p>
+                    {attachedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{file.name}</p>
+                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-end space-x-4 pt-4 border-t">
                 <button
                   type="button"
@@ -306,9 +439,25 @@ export default function Calendar() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  disabled={uploading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                 >
-                  Envoyer la proposition
+                  {uploading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Envoyer {attachedFiles.length > 0 ? `avec ${attachedFiles.length} fichier(s)` : 'la proposition'}
+                    </>
+                  )}
                 </button>
               </div>
             </form>

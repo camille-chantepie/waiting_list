@@ -181,13 +181,100 @@ export default function TeacherCalendar() {
                 )}
                 {selectedTab === "requests" && (
                   <>
-                    <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    <h3 className="text-xl font-semibold mb-2">Aucune demande de créneau</h3>
-                    <p className="mb-4">
-                      Les demandes de cours de vos étudiants apparaîtront ici pour validation
-                    </p>
+                    <div className="space-y-4">
+                      {/* Example request with attached files */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-left">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h4 className="font-semibold text-gray-800 mb-2">
+                              Demande de cours - Marie Dupont
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-medium">Date :</span> 15 octobre 2025 à 14h00
+                            </p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-medium">Matière :</span> Mathématiques - Équations du second degré
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Message :</span> J&apos;ai des difficultés avec les exercices du chapitre 3, voici ma copie pour que vous puissiez voir mes erreurs.
+                            </p>
+                          </div>
+                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                            En attente
+                          </span>
+                        </div>
+
+                        {/* Attached Files Section */}
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                          <h5 className="font-medium text-gray-700 mb-3 flex items-center">
+                            <svg className="h-5 w-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            Documents joints (2)
+                          </h5>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                              <div className="flex items-center">
+                                <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">copie_equations_marie.pdf</p>
+                                  <p className="text-xs text-gray-500">1.2 MB</p>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                  Télécharger
+                                </button>
+                                <button className="border border-blue-600 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-50">
+                                  Aperçu
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                              <div className="flex items-center">
+                                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">exercices_chapitre3.jpg</p>
+                                  <p className="text-xs text-gray-500">850 KB</p>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                  Télécharger
+                                </button>
+                                <button className="border border-blue-600 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-50">
+                                  Aperçu
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex space-x-3">
+                          <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                            Accepter
+                          </button>
+                          <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                            Refuser
+                          </button>
+                          <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                            Proposer un autre créneau
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Empty state for when no requests */}
+                    <div className="mt-8 text-center text-gray-400">
+                      <svg className="h-20 w-20 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      <p className="text-sm">Plus de demandes de créneaux</p>
+                    </div>
                   </>
                 )}
                 {selectedTab === "availability" && (

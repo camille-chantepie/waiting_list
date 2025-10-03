@@ -85,6 +85,20 @@ export default function StudentDashboard() {
       color: "bg-teal-50 border-teal-200 hover:bg-teal-100"
     },
     {
+      title: "Mes notes",
+      description: "Saisir et suivre vos résultats",
+      icon: "📊",
+      href: "/student/notes",
+      color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+    },
+    {
+      title: "Analytics & Progression",
+      description: "Graphiques de votre évolution",
+      icon: "📈",
+      href: "/student/analytics",
+      color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+    },
+    {
       title: "Messagerie",
       description: "Communiquer avec vos professeurs",
       icon: "�",
