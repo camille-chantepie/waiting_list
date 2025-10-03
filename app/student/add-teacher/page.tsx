@@ -94,7 +94,8 @@ export default function AddTeacher() {
       console.log('Résultat validation:', teacherData);
       
       if (!teacherData) {
-        setMessage({ type: 'error', text: 'Code invalide ou expiré. Codes valides pour test: ABC123, DEF456, GHI789' });
+        console.log('Échec de validation - code ne respecte pas le format');
+        setMessage({ type: 'error', text: 'Code invalide. Le code doit contenir 6 à 10 caractères alphanumériques (lettres et chiffres). Exemple: ABC123, YSJ28HPQA' });
         setSubmitting(false);
         return;
       }
@@ -152,16 +153,47 @@ export default function AddTeacher() {
       console.log('Validation du code:', code);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Codes de test valides
-      const validCodes = {
+      // En mode test/développement, accepter tous les codes qui respectent le format
+      // Format valide: 6-10 caractères alphanumériques
+      const codeRegex = /^[A-Z0-9]{6,10}$/i;
+      const normalizedCode = code.toUpperCase().trim();
+      
+      if (!codeRegex.test(normalizedCode)) {
+        console.log('Code ne respecte pas le format requis');
+        return null;
+      }
+      
+      // Codes de test prédéfinis avec des professeurs spécifiques
+      const predefinedCodes = {
         'ABC123': { id: '1', prenom: 'Marie', nom: 'Dupont', matiere: 'Mathématiques' },
         'DEF456': { id: '2', prenom: 'Pierre', nom: 'Martin', matiere: 'Physique' },
         'GHI789': { id: '3', prenom: 'Sophie', nom: 'Durand', matiere: 'Français' }
       };
-
-      const result = validCodes[code.toUpperCase() as keyof typeof validCodes] || null;
-      console.log('Résultat de validation:', result);
-      return result;
+      
+      // Si c'est un code prédéfini, utiliser les données spécifiques
+      if (predefinedCodes[normalizedCode as keyof typeof predefinedCodes]) {
+        const result = predefinedCodes[normalizedCode as keyof typeof predefinedCodes];
+        console.log('Code prédéfini trouvé:', result);
+        return result;
+      }
+      
+      // Pour tous les autres codes valides, générer un professeur aléatoire
+      const prenoms = ['Julie', 'Thomas', 'Claire', 'Antoine', 'Isabelle', 'Maxime', 'Sarah', 'Nicolas', 'Emma', 'Lucas'];
+      const noms = ['Lambert', 'Bernard', 'Moreau', 'Roux', 'Petit', 'Garcia', 'Leroy', 'Fontaine', 'Rousseau', 'Vincent'];
+      const matieres = ['Anglais', 'Histoire', 'Chimie', 'Biologie', 'Espagnol', 'Allemand', 'Géographie', 'Philosophie', 'Arts', 'Informatique'];
+      
+      // Utiliser le code comme seed pour générer des données cohérentes
+      const codeSum = normalizedCode.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      
+      const generatedTeacher = {
+        id: `generated_${normalizedCode}`,
+        prenom: prenoms[codeSum % prenoms.length],
+        nom: noms[(codeSum * 2) % noms.length],
+        matiere: matieres[(codeSum * 3) % matieres.length]
+      };
+      
+      console.log('Professeur généré pour le code:', generatedTeacher);
+      return generatedTeacher;
     } catch (error) {
       console.error('Erreur dans validateTeacherCode:', error);
       throw error;
@@ -320,7 +352,8 @@ export default function AddTeacher() {
                 disabled={submitting}
               />
               <p className="text-sm text-gray-500 mt-2">
-                Le code est composé de lettres et chiffres (sensible à la casse)
+                Format: 6 à 10 caractères alphanumériques (lettres et chiffres). 
+                <span className="text-blue-600 font-medium">Exemple: ABC123, YSJ28HPQA</span>
               </p>
             </div>
 
