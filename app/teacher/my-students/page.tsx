@@ -349,7 +349,7 @@ export default function MyStudents() {
                   Copiez votre code unique
                 </h4>
                 <p className="text-gray-600 text-sm ml-11">
-                  Cliquez sur le bouton "Copier" à côté de votre code en haut de la page.
+                  Cliquez sur le bouton &quot;Copier&quot; à côté de votre code en haut de la page.
                 </p>
               </div>
 

@@ -52,7 +52,7 @@ export default function StudentMessages() {
       setLoading(false);
     };
     getSession();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Si un relation_id est dans l'URL, sélectionner cette relation
@@ -69,7 +69,7 @@ export default function StudentMessages() {
     if (selectedRelation) {
       loadMessages(selectedRelation.relation_id);
     }
-  }, [selectedRelation]);
+  }, [selectedRelation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

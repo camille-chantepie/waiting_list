@@ -200,7 +200,7 @@ export default function AddTeacher() {
                 disabled={submitting}
               />
               <p className="text-sm text-gray-500 mt-2">
-                Le code d'invitation fourni par votre professeur (6 à 10 caractères).
+                Le code d&apos;invitation fourni par votre professeur (6 à 10 caractères).
               </p>
             </div>
 
@@ -289,7 +289,7 @@ export default function AddTeacher() {
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2">Code sécurisé</h3>
                 <p className="text-sm text-gray-600">
-                  Chaque code est unique et permet d'établir une connexion sécurisée 
+                  Chaque code est unique et permet d&apos;établir une connexion sécurisée 
                   entre vous et votre professeur.
                 </p>
               </div>

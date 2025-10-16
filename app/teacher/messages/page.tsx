@@ -40,7 +40,7 @@ export default function TeacherMessages() {
       }, 5000);
       return () => clearInterval(interval);
     }
-  }, [selectedRelation]);
+  }, [selectedRelation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();
