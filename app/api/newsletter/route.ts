@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!email || typeof email !== "string") {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
-  const { error } = await supabase.from("waiting_list").upsert([{ email }], { onConflict: "email" });
+  const { error } = await supabase.from("akademos").upsert([{ email }], { onConflict: "email" });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

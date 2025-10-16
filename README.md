@@ -1,2 +1,1 @@
-# waiting_list
-s
+# Akademos

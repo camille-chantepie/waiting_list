@@ -11,26 +11,34 @@ const supabase = createClient(
 
 interface SlotProposal {
   id: string;
-  studentId: string;
-  studentName: string;
-  teacherId: string;
-  teacherName: string;
-  subject: string;
-  date: string;
-  time: string;
-  message: string;
-  attachedFiles: any[];
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt: string;
-  isNew?: boolean;
-  receivedAt?: string;
+  start_time: string;
+  end_time: string;
+  title: string;
+  description: string;
+  status: 'proposed' | 'accepted' | 'rejected' | 'cancelled';
+  proposed_by_type: 'student' | 'teacher';
+  created_at: string;
+  updated_at: string;
+  teacher: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
+  student: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
+  relation_id: string;
 }
 
 export default function TeacherProposals() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState<SlotProposal[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
+  const [filter, setFilter] = useState<'all' | 'proposed' | 'accepted' | 'rejected' | 'cancelled'>('all');
   const [selectedProposal, setSelectedProposal] = useState<SlotProposal | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -48,26 +56,15 @@ export default function TeacherProposals() {
 
   const loadProposals = async (teacherId: string) => {
     try {
-      // Charger les propositions depuis localStorage
-      const storedProposals = localStorage.getItem(`proposals_teacher_${teacherId}`);
-      if (storedProposals) {
-        const proposalsList = JSON.parse(storedProposals);
-        setProposals(proposalsList);
-        console.log('Propositions chargées:', proposalsList);
-      } else {
-        setProposals([]);
-        console.log('Aucune proposition trouvée');
+      const response = await fetch(`/api/proposals?teacher_id=${teacherId}`);
+      if (!response.ok) {
+        console.error('Erreur lors du chargement des propositions');
+        return;
       }
       
-      // Marquer les notifications comme vues
-      localStorage.removeItem(`notifications_teacher_${teacherId}`);
-      
-      // TODO: Remplacer par Supabase
-      // const { data, error } = await supabase
-      //   .from('slot_proposals')
-      //   .select('*')
-      //   .eq('teacher_id', teacherId)
-      //   .order('created_at', { ascending: false });
+      const result = await response.json();
+      console.log('Propositions chargées:', result);
+      setProposals(result.data || []);
       
     } catch (error) {
       console.error('Erreur lors du chargement des propositions:', error);
@@ -76,38 +73,40 @@ export default function TeacherProposals() {
 
   const handleProposalAction = async (proposalId: string, action: 'accepted' | 'rejected') => {
     try {
-      // Mettre à jour le statut de la proposition
-      const updatedProposals = proposals.map(p => 
-        p.id === proposalId 
-          ? { ...p, status: action, isNew: false, processedAt: new Date().toISOString() }
-          : p
-      );
-      setProposals(updatedProposals);
-      
-      // Sauvegarder dans localStorage
-      if (user?.id) {
-        localStorage.setItem(`proposals_teacher_${user.id}`, JSON.stringify(updatedProposals));
+      if (!user?.id) {
+        alert('Utilisateur non connecté');
+        return;
       }
-      
-      // TODO: Envoyer notification à l'étudiant
-      const proposal = proposals.find(p => p.id === proposalId);
-      if (proposal) {
-        const studentNotifications = JSON.parse(localStorage.getItem(`notifications_student_${proposal.studentId}`) || '{"proposalResponses": 0}');
-        studentNotifications.proposalResponses = (studentNotifications.proposalResponses || 0) + 1;
-        localStorage.setItem(`notifications_student_${proposal.studentId}`, JSON.stringify(studentNotifications));
+
+      const response = await fetch('/api/proposals', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          proposal_id: proposalId,
+          status: action,
+          teacher_id: user.id
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(`Erreur: ${error.error}`);
+        return;
       }
+
+      const result = await response.json();
+      console.log('Proposition mise à jour:', result);
+      
+      // Recharger les propositions
+      await loadProposals(user.id);
       
       setShowModal(false);
       setSelectedProposal(null);
       
       const actionText = action === 'accepted' ? 'acceptée' : 'rejetée';
       alert(`✅ Proposition ${actionText} !`);
-      
-      // TODO: Intégration Supabase
-      // await supabase
-      //   .from('slot_proposals')
-      //   .update({ status: action, processed_at: new Date().toISOString() })
-      //   .eq('id', proposalId);
       
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
@@ -128,24 +127,29 @@ export default function TeacherProposals() {
     });
   };
 
-  const formatTime = (timeString: string) => {
-    return timeString;
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'proposed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
+      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return 'En attente';
+      case 'proposed': return 'En attente';
       case 'accepted': return 'Acceptée';
       case 'rejected': return 'Rejetée';
+      case 'cancelled': return 'Annulée';
       default: return 'Inconnu';
     }
   };
@@ -207,7 +211,7 @@ export default function TeacherProposals() {
           <div className="flex space-x-2">
             {[
               { key: 'all', label: 'Toutes', count: proposals.length },
-              { key: 'pending', label: 'En attente', count: proposals.filter(p => p.status === 'pending').length },
+              { key: 'proposed', label: 'En attente', count: proposals.filter(p => p.status === 'proposed').length },
               { key: 'accepted', label: 'Acceptées', count: proposals.filter(p => p.status === 'accepted').length },
               { key: 'rejected', label: 'Rejetées', count: proposals.filter(p => p.status === 'rejected').length }
             ].map(tab => (
@@ -245,17 +249,12 @@ export default function TeacherProposals() {
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
                       <span className="text-indigo-600 font-semibold">
-                        {proposal.studentName.split(' ').map(n => n.charAt(0)).join('').slice(0, 2)}
+                        {proposal.student.prenom.charAt(0)}{proposal.student.nom.charAt(0)}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">{proposal.studentName}</h3>
-                      <p className="text-sm text-gray-600">{proposal.subject}</p>
-                      {proposal.isNew && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Nouveau
-                        </span>
-                      )}
+                      <h3 className="font-semibold text-gray-800">{proposal.student.prenom} {proposal.student.nom}</h3>
+                      <p className="text-sm text-gray-600">{proposal.title || 'Cours particulier'}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -263,7 +262,7 @@ export default function TeacherProposals() {
                       {getStatusText(proposal.status)}
                     </span>
                     <p className="text-sm text-gray-500 mt-1">
-                      Reçu le {formatDate(proposal.receivedAt || proposal.createdAt)}
+                      Proposé le {formatDate(proposal.created_at)}
                     </p>
                   </div>
                 </div>
@@ -271,22 +270,24 @@ export default function TeacherProposals() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="text-sm text-gray-600">Date proposée</div>
-                    <div className="font-semibold">{formatDate(proposal.date)}</div>
+                    <div className="font-semibold">{formatDate(proposal.start_time)}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600">Heure proposée</div>
-                    <div className="font-semibold">{formatTime(proposal.time)}</div>
+                    <div className="text-sm text-gray-600">Horaire</div>
+                    <div className="font-semibold">{formatTime(proposal.start_time)} - {formatTime(proposal.end_time)}</div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600">Fichiers joints</div>
-                    <div className="font-semibold">{proposal.attachedFiles.length} fichier{proposal.attachedFiles.length !== 1 ? 's' : ''}</div>
+                    <div className="text-sm text-gray-600">Durée</div>
+                    <div className="font-semibold">
+                      {Math.round((new Date(proposal.end_time).getTime() - new Date(proposal.start_time).getTime()) / (1000 * 60))} min
+                    </div>
                   </div>
                 </div>
 
-                {proposal.message && (
+                {proposal.description && (
                   <div className="bg-blue-50 rounded-lg p-3 mb-4">
                     <div className="text-sm text-blue-800 font-medium mb-1">Message de l&apos;élève :</div>
-                    <div className="text-blue-700">{proposal.message}</div>
+                    <div className="text-blue-700 whitespace-pre-wrap">{proposal.description}</div>
                   </div>
                 )}
 
@@ -301,7 +302,7 @@ export default function TeacherProposals() {
                     Voir les détails
                   </button>
                   
-                  {proposal.status === 'pending' && (
+                  {proposal.status === 'proposed' && (
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleProposalAction(proposal.id, 'rejected')}
@@ -343,49 +344,32 @@ export default function TeacherProposals() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Élève</label>
-                    <div className="text-gray-800">{selectedProposal.studentName}</div>
+                    <div className="text-gray-800">{selectedProposal.student.prenom} {selectedProposal.student.nom}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Matière</label>
-                    <div className="text-gray-800">{selectedProposal.subject}</div>
+                    <label className="text-sm font-medium text-gray-600">Matière / Sujet</label>
+                    <div className="text-gray-800">{selectedProposal.title || 'Cours particulier'}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Date</label>
-                    <div className="text-gray-800">{formatDate(selectedProposal.date)}</div>
+                    <div className="text-gray-800">{formatDate(selectedProposal.start_time)}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Heure</label>
-                    <div className="text-gray-800">{formatTime(selectedProposal.time)}</div>
+                    <label className="text-sm font-medium text-gray-600">Horaire</label>
+                    <div className="text-gray-800">{formatTime(selectedProposal.start_time)} - {formatTime(selectedProposal.end_time)}</div>
                   </div>
                 </div>
 
-                {selectedProposal.message && (
+                {selectedProposal.description && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Message</label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-lg text-gray-800">
-                      {selectedProposal.message}
+                    <div className="mt-1 p-3 bg-gray-50 rounded-lg text-gray-800 whitespace-pre-wrap">
+                      {selectedProposal.description}
                     </div>
                   </div>
                 )}
 
-                {selectedProposal.attachedFiles.length > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Fichiers joints</label>
-                    <div className="mt-1 space-y-2">
-                      {selectedProposal.attachedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center p-2 bg-gray-50 rounded-lg">
-                          <div className="text-2xl mr-3">📄</div>
-                          <div className="flex-1">
-                            <div className="font-medium">{file.name}</div>
-                            <div className="text-sm text-gray-500">{file.type}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedProposal.status === 'pending' && (
+                {selectedProposal.status === 'proposed' && (
                   <div className="flex space-x-3 pt-4">
                     <button
                       onClick={() => handleProposalAction(selectedProposal.id, 'rejected')}

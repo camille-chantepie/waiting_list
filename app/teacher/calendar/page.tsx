@@ -14,15 +14,40 @@ export default function TeacherCalendar() {
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<"upcoming" | "requests" | "availability" | "history">("upcoming");
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [pendingProposals, setPendingProposals] = useState<any[]>([]);
+  const [acceptedProposals, setAcceptedProposals] = useState<any[]>([]);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        await loadProposals(session.user.id);
+      }
       setLoading(false);
     };
     getSession();
   }, []);
+
+  const loadProposals = async (teacherId: string) => {
+    try {
+      // Charger les propositions en attente
+      const pendingResponse = await fetch(`/api/proposals?teacher_id=${teacherId}&status=proposed`);
+      if (pendingResponse.ok) {
+        const result = await pendingResponse.json();
+        setPendingProposals(result.data || []);
+      }
+      
+      // Charger les propositions acceptées
+      const acceptedResponse = await fetch(`/api/proposals?teacher_id=${teacherId}&status=accepted`);
+      if (acceptedResponse.ok) {
+        const result = await acceptedResponse.json();
+        setAcceptedProposals(result.data || []);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des propositions:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -123,7 +148,7 @@ export default function TeacherCalendar() {
             >
               <span className="mr-2">📅</span>
               Cours à venir
-              <span className="ml-2 px-2 py-1 rounded-full text-xs bg-white/20">0</span>
+              <span className="ml-2 px-2 py-1 rounded-full text-xs bg-white/20">{acceptedProposals.length}</span>
             </button>
             <button
               onClick={() => setSelectedTab("requests")}
@@ -135,7 +160,7 @@ export default function TeacherCalendar() {
             >
               <span className="mr-2">🔔</span>
               Demandes
-              <span className="ml-2 px-2 py-1 rounded-full text-xs bg-white/20">0</span>
+              <span className="ml-2 px-2 py-1 rounded-full text-xs bg-white/20">{pendingProposals.length}</span>
             </button>
             <button
               onClick={() => setSelectedTab("availability")}
@@ -166,146 +191,140 @@ export default function TeacherCalendar() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg border p-12">
-              <div className="text-center text-gray-500">
-                {selectedTab === "upcoming" && (
-                  <>
-                    <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <h3 className="text-xl font-semibold mb-2">Aucun cours planifié</h3>
-                    <p className="mb-4">
-                      Les cours confirmés avec vos étudiants apparaîtront ici
-                    </p>
-                  </>
-                )}
-                {selectedTab === "requests" && (
-                  <>
-                    <div className="space-y-4">
-                      {/* Example request with attached files */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-left">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-800 mb-2">
-                              Demande de cours - Marie Dupont
-                            </h4>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <span className="font-medium">Date :</span> 15 octobre 2025 à 14h00
-                            </p>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <span className="font-medium">Matière :</span> Mathématiques - Équations du second degré
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Message :</span> J&apos;ai des difficultés avec les exercices du chapitre 3, voici ma copie pour que vous puissiez voir mes erreurs.
-                            </p>
-                          </div>
-                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                            En attente
-                          </span>
-                        </div>
-
-                        {/* Attached Files Section */}
-                        <div className="bg-white rounded-lg p-4 mb-4">
-                          <h5 className="font-medium text-gray-700 mb-3 flex items-center">
-                            <svg className="h-5 w-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            Documents joints (2)
-                          </h5>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center">
-                                <svg className="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">copie_equations_marie.pdf</p>
-                                  <p className="text-xs text-gray-500">1.2 MB</p>
-                                </div>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                  Télécharger
-                                </button>
-                                <button className="border border-blue-600 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-50">
-                                  Aperçu
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center">
-                                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">exercices_chapitre3.jpg</p>
-                                  <p className="text-xs text-gray-500">850 KB</p>
-                                </div>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                                  Télécharger
-                                </button>
-                                <button className="border border-blue-600 text-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-50">
-                                  Aperçu
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex space-x-3">
-                          <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                            Accepter
-                          </button>
-                          <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
-                            Refuser
-                          </button>
-                          <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                            Proposer un autre créneau
-                          </button>
-                        </div>
-                      </div>
+            <div className="bg-white rounded-2xl shadow-lg border p-6">
+              {selectedTab === "upcoming" && (
+                <div className="space-y-4">
+                  {acceptedProposals.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <h3 className="text-xl font-semibold mb-2">Aucun cours planifié</h3>
+                      <p className="mb-4">Les cours confirmés avec vos étudiants apparaîtront ici</p>
                     </div>
-
-                    {/* Empty state for when no requests */}
-                    <div className="mt-8 text-center text-gray-400">
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-4">Cours confirmés ({acceptedProposals.length})</h3>
+                      {acceptedProposals.map((proposal: any) => (
+                        <div key={proposal.id} className="bg-green-50 border border-green-200 rounded-xl p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <span className="text-lg font-bold text-green-600">
+                                  {proposal.student.prenom.charAt(0)}{proposal.student.nom.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-800">{proposal.title || 'Cours particulier'}</h4>
+                                <p className="text-sm text-gray-600">{proposal.student.prenom} {proposal.student.nom}</p>
+                              </div>
+                            </div>
+                            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">Confirmé</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-gray-600">📅 Date:</span>
+                              <span className="ml-2 font-medium">{new Date(proposal.start_time).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">🕐 Heure:</span>
+                              <span className="ml-2 font-medium">{new Date(proposal.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {new Date(proposal.end_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                          {proposal.description && (
+                            <p className="mt-3 text-sm text-gray-700 bg-white rounded p-2">{proposal.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {selectedTab === "requests" && (
+                <div className="space-y-4">
+                  {pendingProposals.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
                       <svg className="h-20 w-20 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                       </svg>
-                      <p className="text-sm">Plus de demandes de créneaux</p>
+                      <p className="text-lg font-medium text-gray-600 mb-2">Aucune demande de créneau</p>
+                      <p className="text-sm text-gray-500">Les demandes de vos étudiants apparaîtront ici</p>
+                      <Link href="/teacher/proposals" className="inline-block mt-4 text-indigo-600 hover:text-indigo-800 font-medium">
+                        Voir toutes les propositions →
+                      </Link>
                     </div>
-                  </>
-                )}
-                {selectedTab === "availability" && (
-                  <>
-                    <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 className="text-xl font-semibold mb-2">Aucune disponibilité définie</h3>
-                    <p className="mb-4">
-                      Ajoutez vos créneaux disponibles pour que vos étudiants puissent réserver
-                    </p>
-                    <button
-                      onClick={() => setShowAvailabilityModal(true)}
-                      className="text-indigo-600 hover:text-indigo-800 font-medium"
-                    >
-                      Ajouter une disponibilité →
-                    </button>
-                  </>
-                )}
-                {selectedTab === "history" && (
-                  <>
-                    <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 className="text-xl font-semibold mb-2">Aucun cours passé</h3>
-                    <p className="mb-4">
-                      L&apos;historique de vos cours terminés apparaîtra ici
-                    </p>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-4">Demandes en attente ({pendingProposals.length})</h3>
+                      {pendingProposals.map((proposal: any) => (
+                        <div key={proposal.id} className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-lg font-bold text-orange-600">
+                                  {proposal.student.prenom.charAt(0)}{proposal.student.nom.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-800">{proposal.title || 'Cours particulier'}</h4>
+                                <p className="text-sm text-gray-600">{proposal.student.prenom} {proposal.student.nom}</p>
+                              </div>
+                            </div>
+                            <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-medium">En attente</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                            <div>
+                              <span className="text-gray-600">📅 Date:</span>
+                              <span className="ml-2 font-medium">{new Date(proposal.start_time).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">🕐 Heure:</span>
+                              <span className="ml-2 font-medium">{new Date(proposal.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {new Date(proposal.end_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                          {proposal.description && (
+                            <p className="mb-3 text-sm text-gray-700 bg-white rounded p-2">{proposal.description}</p>
+                          )}
+                          <Link
+                            href="/teacher/proposals"
+                            className="block text-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                          >
+                            Répondre à cette demande
+                          </Link>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              {selectedTab === "availability" && (
+                <div className="text-center text-gray-500">
+                  <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-xl font-semibold mb-2">Aucune disponibilité définie</h3>
+                  <p className="mb-4">
+                    Ajoutez vos créneaux disponibles pour que vos étudiants puissent réserver
+                  </p>
+                  <button
+                    onClick={() => setShowAvailabilityModal(true)}
+                    className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Ajouter une disponibilité →
+                  </button>
+                </div>
+              )}
+              {selectedTab === "history" && (
+                <div className="text-center text-gray-500">
+                  <svg className="h-32 w-32 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-xl font-semibold mb-2">Aucun cours passé</h3>
+                  <p className="mb-4">
+                    L&apos;historique de vos cours terminés apparaîtra ici
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

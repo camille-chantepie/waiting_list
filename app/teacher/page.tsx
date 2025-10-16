@@ -12,68 +12,59 @@ const supabase = createClient(
 export default function TeacherDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState({
-    students: 0,
-    calendar: 0,
-    messages: 0,
-    resources: 0,
-    notes: 0,
-    proposals: 0
-  });
+  const [studentsCount, setStudentsCount] = useState(0);
+  const [students, setStudents] = useState<any[]>([]);
+  const [pendingProposals, setPendingProposals] = useState<any[]>([]);
+  const [acceptedProposals, setAcceptedProposals] = useState<any[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
       if (session?.user) {
-        loadNotifications();
+        await loadStats(session.user.id);
       }
       setLoading(false);
     };
     getSession();
   }, []);
 
-    const loadNotifications = async () => {
-    if (!user?.id) return;
-    
+  const loadStats = async (teacherId: string) => {
     try {
-      // Charger les notifications depuis localStorage
-      const storedNotifications = localStorage.getItem(`notifications_teacher_${user.id}`);
-      let newNotifications = { students: 0, calendar: 0, messages: 2, resources: 0, notes: 0, proposals: 0 };
-      
-      if (storedNotifications) {
-        const parsed = JSON.parse(storedNotifications);
-        newNotifications = { ...newNotifications, ...parsed };
+      // Charger le nombre d'étudiants
+      const response = await fetch(`/api/relations?teacher_id=${teacherId}`);
+      if (response.ok) {
+        const result = await response.json();
+        setStudentsCount(result.data?.length || 0);
+        setStudents(result.data || []);
       }
       
-      setNotifications(newNotifications);
-      console.log('Notifications chargées:', newNotifications);
+      // Charger les propositions en attente
+      const proposalsResponse = await fetch(`/api/proposals?teacher_id=${teacherId}&status=proposed`);
+      if (proposalsResponse.ok) {
+        const proposalsResult = await proposalsResponse.json();
+        setPendingProposals(proposalsResult.data || []);
+      }
       
-      // TODO: Remplacer par Supabase
-      // const { data } = await supabase
-      //   .from('notifications')
-      //   .select('type')
-      //   .eq('user_id', user.id)
-      //   .eq('is_read', false);
+      // Charger les propositions acceptées
+      const acceptedResponse = await fetch(`/api/proposals?teacher_id=${teacherId}&status=accepted`);
+      if (acceptedResponse.ok) {
+        const acceptedResult = await acceptedResponse.json();
+        setAcceptedProposals(acceptedResult.data || []);
+      }
+      
+      // TODO: Charger le nombre de messages non lus
+      // const messagesResponse = await fetch(`/api/messages/unread?teacher_id=${teacherId}`);
       
     } catch (error) {
-      console.error('Erreur lors du chargement des notifications:', error);
+      console.error('Erreur lors du chargement des statistiques:', error);
     }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
-  };
-
-  // Composant Badge de notification
-  const NotificationBadge = ({ count }: { count: number }) => {
-    if (count === 0) return null;
-    return (
-      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
-        {count > 9 ? '9+' : count}
-      </span>
-    );
   };
 
   if (loading) {
@@ -153,7 +144,7 @@ export default function TeacherDashboard() {
               </div>
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Actifs</span>
             </div>
-            <div className="text-3xl font-bold text-indigo-600 mb-1">0</div>
+            <div className="text-3xl font-bold text-indigo-600 mb-1">{studentsCount}</div>
             <div className="text-gray-600 text-sm">Étudiants</div>
           </div>
 
@@ -164,7 +155,7 @@ export default function TeacherDashboard() {
               </div>
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Cette semaine</span>
             </div>
-            <div className="text-3xl font-bold text-green-600 mb-1">0</div>
+            <div className="text-3xl font-bold text-green-600 mb-1">{acceptedProposals.length}</div>
             <div className="text-gray-600 text-sm">Cours planifiés</div>
           </div>
 
@@ -175,7 +166,7 @@ export default function TeacherDashboard() {
               </div>
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">En attente</span>
             </div>
-            <div className="text-3xl font-bold text-orange-600 mb-1">0</div>
+            <div className="text-3xl font-bold text-orange-600 mb-1">{pendingProposals.length}</div>
             <div className="text-gray-600 text-sm">Demandes de créneaux</div>
           </div>
 
@@ -201,15 +192,52 @@ export default function TeacherDashboard() {
               </Link>
             </div>
             <div className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p>Aucun cours planifié pour le moment</p>
-                <Link href="/teacher/calendar" className="text-indigo-600 hover:text-indigo-800 text-sm mt-2 inline-block">
-                  Gérer mes disponibilités
-                </Link>
-              </div>
+              {acceptedProposals.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p>Aucun cours planifié pour le moment</p>
+                  <Link href="/teacher/calendar" className="text-indigo-600 hover:text-indigo-800 text-sm mt-2 inline-block">
+                    Gérer mes disponibilités
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {acceptedProposals.slice(0, 3).map((proposal: any) => (
+                    <div key={proposal.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-green-600">
+                            {proposal.student.prenom.charAt(0)}{proposal.student.nom.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800 text-sm">
+                            {proposal.title || 'Cours particulier'}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {proposal.student.prenom} {proposal.student.nom} • {new Date(proposal.start_time).toLocaleDateString('fr-FR')} à {new Date(proposal.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                      <Link 
+                        href="/teacher/calendar"
+                        className="text-green-600 hover:text-green-800 text-sm"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
+                  ))}
+                  {acceptedProposals.length > 3 && (
+                    <Link href="/teacher/calendar" className="block text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium pt-2">
+                      Voir tous les cours ({acceptedProposals.length}) →
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -222,12 +250,49 @@ export default function TeacherDashboard() {
               </Link>
             </div>
             <div className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <p>Aucune demande de créneau</p>
-              </div>
+              {pendingProposals.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <p>Aucune demande de créneau</p>
+                </div>
+              ) : (
+                <>
+                  {pendingProposals.slice(0, 3).map((proposal: any) => (
+                    <div key={proposal.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-orange-600">
+                            {proposal.student.prenom.charAt(0)}{proposal.student.nom.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800 text-sm">
+                            {proposal.title || 'Cours particulier'}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {proposal.student.prenom} {proposal.student.nom} • {new Date(proposal.start_time).toLocaleDateString('fr-FR')} à {new Date(proposal.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                      <Link 
+                        href="/teacher/proposals"
+                        className="text-orange-600 hover:text-orange-800 text-sm"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
+                  ))}
+                  {pendingProposals.length > 3 && (
+                    <Link href="/teacher/proposals" className="block text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium pt-2">
+                      Voir toutes les demandes ({pendingProposals.length}) →
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -240,15 +305,52 @@ export default function TeacherDashboard() {
               </Link>
             </div>
             <div className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <p>Aucun étudiant</p>
-                <Link href="/teacher/my-students" className="text-indigo-600 hover:text-indigo-800 text-sm mt-2 inline-block">
-                  Générer un code pour un nouvel étudiant
-                </Link>
-              </div>
+              {students.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p>Aucun étudiant</p>
+                  <Link href="/teacher/my-students" className="text-indigo-600 hover:text-indigo-800 text-sm mt-2 inline-block">
+                    Générer un code pour un nouvel étudiant
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {students.slice(0, 3).map((relation: any) => (
+                    <div key={relation.relation_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-indigo-600">
+                            {relation.student.prenom.charAt(0)}{relation.student.nom.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800 text-sm">
+                            {relation.student.prenom} {relation.student.nom}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {relation.student.email}
+                          </div>
+                        </div>
+                      </div>
+                      <Link 
+                        href={`/teacher/messages?student=${relation.student.id}`}
+                        className="text-indigo-600 hover:text-indigo-800 text-sm"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </Link>
+                    </div>
+                  ))}
+                  {students.length > 3 && (
+                    <Link href="/teacher/my-students" className="block text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium pt-2">
+                      Voir tous les étudiants ({students.length}) →
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -278,7 +380,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Mes étudiants</div>
                 <div className="text-sm text-gray-600">Gérer et ajouter</div>
               </div>
-              {notifications.students > 0 && <NotificationBadge count={notifications.students} />}
             </Link>
             <Link href="/teacher/calendar" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200 relative">
               <span className="text-2xl mr-3">📅</span>
@@ -286,7 +387,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Calendrier</div>
                 <div className="text-sm text-gray-600">Gérer mes cours</div>
               </div>
-              {notifications.calendar > 0 && <NotificationBadge count={notifications.calendar} />}
             </Link>
             <Link href="/teacher/messages" className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 relative">
               <span className="text-2xl mr-3">💬</span>
@@ -294,7 +394,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Messages</div>
                 <div className="text-sm text-gray-600">Échanger avec les élèves</div>
               </div>
-              {notifications.messages > 0 && <NotificationBadge count={notifications.messages} />}
             </Link>
             <Link href="/teacher/resources" className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors border border-orange-200 relative">
               <span className="text-2xl mr-3">📚</span>
@@ -302,7 +401,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Ressources</div>
                 <div className="text-sm text-gray-600">Partager du contenu</div>
               </div>
-              {notifications.resources > 0 && <NotificationBadge count={notifications.resources} />}
             </Link>
             <Link href="/teacher/proposals" className="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors border border-yellow-200 relative">
               <span className="text-2xl mr-3">⏰</span>
@@ -310,7 +408,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Propositions</div>
                 <div className="text-sm text-gray-600">Créneaux proposés</div>
               </div>
-              {notifications.proposals > 0 && <NotificationBadge count={notifications.proposals} />}
             </Link>
             <Link href="/teacher/notes" className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200 relative">
               <span className="text-2xl mr-3">📊</span>
@@ -318,7 +415,6 @@ export default function TeacherDashboard() {
                 <div className="font-semibold text-gray-800">Notes</div>
                 <div className="text-sm text-gray-600">Gérer les notes élèves</div>
               </div>
-              {notifications.notes > 0 && <NotificationBadge count={notifications.notes} />}
             </Link>
             <Link href="/teacher/account" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200 relative">
               <span className="text-2xl mr-3">⚙️</span>

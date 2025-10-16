@@ -16,7 +16,6 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [selectedTeacher, setSelectedTeacher] = useState("");
-  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -36,24 +35,33 @@ export default function Calendar() {
 
   const loadConnectedTeachers = async (userId: string) => {
     try {
-      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
-      if (storedTeachers) {
-        const teachers = JSON.parse(storedTeachers);
-        setConnectedTeachers(teachers);
+      const response = await fetch(`/api/relations?student_id=${userId}`);
+      if (!response.ok) {
+        console.error('Erreur lors du chargement des professeurs');
+        return;
       }
+      
+      const result = await response.json();
+      console.log('Connected teachers loaded:', result);
+      
+      // Les données sont dans result.data
+      const relations = result.data || [];
+      
+      // Transformer les données pour correspondre au format attendu
+      const teachers = relations.map((relation: any) => ({
+        id: relation.teacher.id,
+        nom: relation.teacher.nom,
+        prenom: relation.teacher.prenom,
+        email: relation.teacher.email,
+        matiere: relation.teacher.matiere || 'Non spécifié'
+      }));
+      
+      console.log('Formatted teachers:', teachers);
+      setConnectedTeachers(teachers);
     } catch (error) {
       console.error('Erreur lors du chargement des professeurs:', error);
     }
   };
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setLoading(false);
-    };
-    getSession();
-  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -65,84 +73,73 @@ export default function Calendar() {
     setUploading(true);
     
     try {
-      // Trouver les données du professeur sélectionné
-      const selectedTeacherData = connectedTeachers.find(t => t.id === selectedTeacher);
-      if (!selectedTeacherData) {
-        alert('Professeur non trouvé');
+      // Trouver la relation avec le professeur sélectionné
+      const response = await fetch(`/api/relations?student_id=${user.id}`);
+      if (!response.ok) {
+        alert('Erreur lors de la récupération de la relation');
+        setUploading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      const relation = result.data?.find((r: any) => r.teacher.id === selectedTeacher);
+      
+      if (!relation) {
+        alert('Relation avec le professeur non trouvée');
         setUploading(false);
         return;
       }
 
-      // TODO: Upload files to storage
-      const uploadedFiles = [];
+      // Créer les timestamps start_time et end_time
+      // Combine date + time pour start_time, et ajoute 1 heure pour end_time
+      const startDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(endDateTime.getHours() + 1); // Par défaut, cours d'1 heure
+
+      // Extraire le titre (première ligne) et la description (reste) du message
+      const lines = message.split('\n');
+      const title = lines[0] || 'Cours particulier';
+      const description = lines.length > 1 ? lines.slice(1).join('\n').trim() : null;
       
-      if (attachedFiles.length > 0) {
-        for (const file of attachedFiles) {
-          // Simulate file upload
-          console.log(`Uploading ${file.name}...`);
-          // const { data: uploadData, error: uploadError } = await supabase.storage
-          //   .from('student-resources')
-          //   .upload(`${user.id}/${Date.now()}_${file.name}`, file);
-          
-          uploadedFiles.push({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url: `simulated-url/${file.name}` // Placeholder URL
-          });
-        }
+      // Log pour déboguer
+      console.log('Proposition data:', {
+        relation_id: relation.relation_id,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        title: title,
+        description: description,
+        proposed_by_id: user.id,
+        proposed_by_type: 'student'
+      });
+      
+      // Créer la proposition via l'API
+      const proposalResponse = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          relation_id: relation.relation_id,
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
+          title: title || 'Cours particulier',
+          description: description,
+          proposed_by_id: user.id,
+          proposed_by_type: 'student'
+        }),
+      });
+
+      if (!proposalResponse.ok) {
+        const error = await proposalResponse.json();
+        alert(`Erreur: ${error.error}`);
+        setUploading(false);
+        return;
       }
 
-      // TODO: Save proposal with attached files
-      const proposalData = {
-        id: `proposal_${Date.now()}`,
-        studentId: user.id,
-        studentName: `${user.user_metadata?.prenom || 'Étudiant'} ${user.user_metadata?.nom || ''}`.trim(),
-        teacherId: selectedTeacher,
-        teacherName: selectedTeacherData ? `${selectedTeacherData.prenom} ${selectedTeacherData.nom}` : 'Professeur',
-        subject: selectedTeacherData?.matiere || subject,
-        date: selectedDate,
-        time: selectedTime,
-        message,
-        attachedFiles: uploadedFiles,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log('Proposal data:', proposalData);
-      
-      // Sauvegarder pour l'étudiant
-      const existingStudentProposals = JSON.parse(localStorage.getItem(`proposals_student_${user.id}`) || '[]');
-      existingStudentProposals.push(proposalData);
-      localStorage.setItem(`proposals_student_${user.id}`, JSON.stringify(existingStudentProposals));
-      
-      // Sauvegarder pour le professeur (simulation de notification)
-      const existingTeacherProposals = JSON.parse(localStorage.getItem(`proposals_teacher_${selectedTeacher}`) || '[]');
-      existingTeacherProposals.push({
-        ...proposalData,
-        isNew: true, // Marquer comme nouvelle proposition
-        receivedAt: new Date().toISOString()
-      });
-      localStorage.setItem(`proposals_teacher_${selectedTeacher}`, JSON.stringify(existingTeacherProposals));
-      
-      // Incrémenter le compteur de notifications pour le professeur
-      const teacherNotifications = JSON.parse(localStorage.getItem(`notifications_teacher_${selectedTeacher}`) || '{"newProposals": 0}');
-      teacherNotifications.newProposals = (teacherNotifications.newProposals || 0) + 1;
-      localStorage.setItem(`notifications_teacher_${selectedTeacher}`, JSON.stringify(teacherNotifications));
-      
-      console.log('Proposition sauvegardée pour étudiant et professeur');
-      
-      // TODO: Send notification to teacher via Supabase
-      // await supabase.from('notifications').insert({
-      //   user_id: selectedTeacher,
-      //   type: 'new_slot_proposal',
-      //   title: 'Nouvelle proposition de créneau',
-      //   message: `${user.user_metadata?.prenom} ${user.user_metadata?.nom} propose un cours pour le ${selectedDate} à ${selectedTime}`,
-      //   data: proposalData,
-      //   is_read: false
-      // });
+      const proposalResult = await proposalResponse.json();
+      console.log('Proposition créée:', proposalResult);
 
-      alert(`✅ Proposition envoyée à ${selectedTeacherData.prenom} ${selectedTeacherData.nom} !`);
+      alert(`✅ Proposition envoyée à ${relation.teacher.prenom} ${relation.teacher.nom} !`);
       setShowModal(false);
       resetForm();
       
@@ -175,7 +172,6 @@ export default function Calendar() {
     setSelectedDate("");
     setSelectedTime("");
     setSelectedTeacher("");
-    setSubject("");
     setMessage("");
     setAttachedFiles([]);
   };
@@ -409,32 +405,20 @@ export default function Calendar() {
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Matière / Sujet *
-                </label>
-                <input
-                  type="text"
-                  id="subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Ex: Mathématiques - Équations du second degré"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
                 <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Message (optionnel)
+                  Sujet / Message (optionnel)
                 </label>
                 <textarea
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ajoutez des détails sur ce que vous aimeriez travailler..."
-                  rows={4}
+                  placeholder="Ex: Mathématiques - Équations du second degré&#10;&#10;J'aimerais travailler sur les équations du second degré car j'ai un contrôle la semaine prochaine..."
+                  rows={5}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none resize-none"
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  💡 Décrivez le sujet que vous souhaitez travailler et ajoutez des détails si nécessaire
+                </p>
               </div>
 
               {/* File Upload Section */}

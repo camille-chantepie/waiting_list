@@ -10,23 +10,14 @@ const supabase = createClient(
 );
 
 interface ConnectedTeacher {
-  id: string;
-  nom: string;
-  prenom: string;
-  matiere: string;
-  email?: string;
+  relation_id: string;
+  teacher: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
   connected_at: string;
-  lastMessage?: string;
-  nextClass?: {
-    date: string;
-    time: string;
-    type: string;
-  };
-  stats?: {
-    totalClasses: number;
-    pendingSlots: number;
-    averageGrade: number;
-  };
 }
 
 export default function MyTeachers() {
@@ -51,43 +42,12 @@ export default function MyTeachers() {
 
   const loadConnectedTeachers = async (userId: string) => {
     try {
-      // Pour l'instant, on récupère depuis localStorage pour la démo
-      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
-      if (storedTeachers) {
-        const teachers = JSON.parse(storedTeachers);
-        // Ajouter des données enrichies pour la démo
-        const enrichedTeachers = teachers.map((teacher: any) => ({
-          ...teacher,
-          email: `${teacher.prenom.toLowerCase()}.${teacher.nom.toLowerCase()}@academie.fr`,
-          lastMessage: "Il y a 2 jours",
-          nextClass: Math.random() > 0.5 ? {
-            date: "2025-10-08",
-            time: "14:00",
-            type: "Cours particulier"
-          } : null,
-          stats: {
-            totalClasses: Math.floor(Math.random() * 20) + 5,
-            pendingSlots: Math.floor(Math.random() * 3),
-            averageGrade: Math.round((Math.random() * 8 + 12) * 10) / 10
-          }
-        }));
-        setConnectedTeachers(enrichedTeachers);
+      const response = await fetch(`/api/relations?student_id=${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load teachers');
       }
-      
-      // TODO: Remplacer par une vraie requête Supabase
-      // const { data, error } = await supabase
-      //   .from('student_teacher_connections')
-      //   .select(`
-      //     teacher_id,
-      //     connected_at,
-      //     teachers:teacher_id (
-      //       id,
-      //       user_metadata
-      //     )
-      //   `)
-      //   .eq('student_id', userId)
-      //   .eq('status', 'active');
-      
+      const result = await response.json();
+      setConnectedTeachers(result.data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des professeurs:', error);
     }
@@ -107,27 +67,22 @@ export default function MyTeachers() {
     });
   };
 
-  const disconnectTeacher = async (teacherId: string) => {
+  const disconnectTeacher = async (relationId: string) => {
     if (confirm('Êtes-vous sûr de vouloir vous déconnecter de ce professeur ?')) {
       try {
-        // Mise à jour locale
-        const updatedTeachers = connectedTeachers.filter(t => t.id !== teacherId);
-        setConnectedTeachers(updatedTeachers);
+        const response = await fetch(`/api/relations?relation_id=${relationId}&student_id=${user.id}`, {
+          method: 'DELETE'
+        });
         
-        // Mise à jour localStorage pour la démo
-        if (user?.id) {
-          localStorage.setItem(`connectedTeachers_${user.id}`, JSON.stringify(updatedTeachers));
+        if (!response.ok) {
+          throw new Error('Failed to disconnect');
         }
         
-        // TODO: Mise à jour Supabase
-        // await supabase
-        //   .from('student_teacher_connections')
-        //   .update({ status: 'disconnected' })
-        //   .eq('student_id', user.id)
-        //   .eq('teacher_id', teacherId);
-        
+        // Recharger la liste
+        await loadConnectedTeachers(user.id);
       } catch (error) {
         console.error('Erreur lors de la déconnexion:', error);
+        alert('Impossible de se déconnecter. Veuillez réessayer.');
       }
     }
   };
@@ -186,23 +141,10 @@ export default function MyTeachers() {
             </Link>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="text-2xl font-bold text-blue-600">{connectedTeachers.length}</div>
               <div className="text-blue-800 font-medium">Professeurs connectés</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {connectedTeachers.reduce((sum, t) => sum + (t.stats?.totalClasses || 0), 0)}
-              </div>
-              <div className="text-green-800 font-medium">Cours total</div>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-purple-600">
-                {connectedTeachers.reduce((sum, t) => sum + (t.stats?.pendingSlots || 0), 0)}
-              </div>
-              <div className="text-purple-800 font-medium">Créneaux en attente</div>
             </div>
           </div>
         </div>
@@ -224,26 +166,25 @@ export default function MyTeachers() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {connectedTeachers.map((teacher) => (
-              <div key={teacher.id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
+            {connectedTeachers.map((item) => (
+              <div key={item.relation_id} className="bg-white rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow">
                 {/* Teacher Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
                       <span className="text-indigo-600 font-semibold text-lg">
-                        {teacher.prenom.charAt(0)}{teacher.nom.charAt(0)}
+                        {item.teacher.prenom.charAt(0)}{item.teacher.nom.charAt(0)}
                       </span>
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">
-                        {teacher.prenom} {teacher.nom}
+                        {item.teacher.prenom} {item.teacher.nom}
                       </h3>
-                      <p className="text-indigo-600 font-medium">{teacher.matiere}</p>
-                      <p className="text-sm text-gray-500">{teacher.email}</p>
+                      <p className="text-sm text-gray-500">{item.teacher.email}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => disconnectTeacher(teacher.id)}
+                    onClick={() => disconnectTeacher(item.relation_id)}
                     className="text-red-600 hover:text-red-800 text-sm"
                     title="Se déconnecter"
                   >
@@ -255,54 +196,26 @@ export default function MyTeachers() {
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Connecté depuis</span>
-                    <span className="font-medium">{formatDate(teacher.connected_at)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Dernier message</span>
-                    <span className="font-medium">{teacher.lastMessage}</span>
-                  </div>
-                  {teacher.nextClass && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Prochain cours</span>
-                      <span className="font-medium text-green-600">
-                        {formatDate(teacher.nextClass.date)} à {teacher.nextClass.time}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <div className="font-bold text-gray-800">{teacher.stats?.totalClasses}</div>
-                    <div className="text-xs text-gray-600">Cours</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-gray-800">{teacher.stats?.pendingSlots}</div>
-                    <div className="text-xs text-gray-600">En attente</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-gray-800">{teacher.stats?.averageGrade}/20</div>
-                    <div className="text-xs text-gray-600">Moyenne</div>
+                    <span className="font-medium">{formatDate(item.connected_at)}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => openModal(teacher, 'schedule')}
+                    onClick={() => openModal(item, 'schedule')}
                     className="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
                   >
                     📅 Programmer
                   </button>
                   <button
-                    onClick={() => openModal(teacher, 'message')}
+                    onClick={() => openModal(item, 'message')}
                     className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
                   >
                     💬 Message
                   </button>
                   <button
-                    onClick={() => openModal(teacher, 'notes')}
+                    onClick={() => openModal(item, 'notes')}
                     className="bg-purple-100 text-purple-800 px-3 py-2 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
                   >
                     📊 Notes
@@ -333,7 +246,7 @@ export default function MyTeachers() {
 
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  Avec {selectedTeacher.prenom} {selectedTeacher.nom} ({selectedTeacher.matiere})
+                  Avec {selectedTeacher.teacher.prenom} {selectedTeacher.teacher.nom}
                 </p>
               </div>
 
@@ -341,7 +254,7 @@ export default function MyTeachers() {
                 <div className="space-y-4">
                   <p className="text-gray-600">Proposer un créneau à votre professeur</p>
                   <Link
-                    href={`/student/calendar?teacher=${selectedTeacher.id}`}
+                    href={`/student/calendar?relation=${selectedTeacher.relation_id}`}
                     className="block w-full bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
                     onClick={() => setShowModal(false)}
                   >
@@ -354,7 +267,7 @@ export default function MyTeachers() {
                 <div className="space-y-4">
                   <p className="text-gray-600">Communiquer avec votre professeur</p>
                   <Link
-                    href={`/student/messages?teacher=${selectedTeacher.id}`}
+                    href={`/student/messages?relation=${selectedTeacher.relation_id}`}
                     className="block w-full bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
                     onClick={() => setShowModal(false)}
                   >
@@ -365,9 +278,9 @@ export default function MyTeachers() {
 
               {modalType === 'notes' && (
                 <div className="space-y-4">
-                  <p className="text-gray-600">Consulter vos notes dans cette matière</p>
+                  <p className="text-gray-600">Consulter vos notes</p>
                   <Link
-                    href={`/student/notes-analytics?subject=${encodeURIComponent(selectedTeacher.matiere)}`}
+                    href={`/student/notes-analytics?teacher=${selectedTeacher.teacher.id}`}
                     className="block w-full bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
                     onClick={() => setShowModal(false)}
                   >

@@ -31,31 +31,13 @@ export default function AddTeacher() {
 
   const loadConnectedTeachers = async (userId: string) => {
     try {
-      // Charger depuis localStorage pour la démo
-      const storedTeachers = localStorage.getItem(`connectedTeachers_${userId}`);
-      if (storedTeachers) {
-        const teachers = JSON.parse(storedTeachers);
-        setConnectedTeachers(teachers);
-        console.log('Professeurs connectés chargés depuis localStorage:', teachers);
-      } else {
-        setConnectedTeachers([]);
-        console.log('Aucun professeur connecté trouvé');
+      const response = await fetch(`/api/relations?student_id=${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load teachers');
       }
-      
-      // TODO: Remplacer par une vraie requête Supabase
-      // const { data } = await supabase
-      //   .from('student_teacher_connections')
-      //   .select(`
-      //     teacher_id,
-      //     teachers:teacher_id (
-      //       id,
-      //       user_metadata->nom,
-      //       user_metadata->prenom,
-      //       user_metadata->matiere
-      //     )
-      //   `)
-      //   .eq('student_id', userId);
-      
+      const result = await response.json();
+      const teachers = result.data || [];
+      setConnectedTeachers(teachers);
     } catch (error) {
       console.error('Erreur lors du chargement des professeurs:', error);
     }
@@ -72,7 +54,6 @@ export default function AddTeacher() {
     setMessage(null);
 
     try {
-      // Vérification préliminaire
       if (!user || !user.id) {
         setMessage({ type: 'error', text: 'Vous devez être connecté pour ajouter un professeur.' });
         setSubmitting(false);
@@ -85,28 +66,30 @@ export default function AddTeacher() {
         return;
       }
 
-      console.log('Validation du code:', teacherCode);
-      console.log('Utilisateur connecté:', user.id);
-      
-      // Étape 1: Valider le code professeur
-      const teacherData = await validateTeacherCode(teacherCode);
-      
-      console.log('Résultat validation:', teacherData);
-      
-      if (!teacherData) {
-        console.log('Échec de validation - code ne respecte pas le format');
-        setMessage({ type: 'error', text: 'Code invalide. Le code doit contenir 6 à 10 caractères alphanumériques (lettres et chiffres). Exemple: ABC123, YSJ28HPQA' });
+      // Appeler l'API de connexion
+      const response = await fetch('/api/relations/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          student_id: user.id,
+          teacher_code: teacherCode.toUpperCase().trim()
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: result.error || 'Code invalide. Veuillez vérifier et réessayer.' });
         setSubmitting(false);
         return;
       }
 
-      // Étape 2: Créer la connexion élève-professeur
-      const connectionResult = await createStudentTeacherConnection(user.id, teacherData);
-      
-      if (connectionResult.success) {
+      if (result.success) {
         setMessage({ 
           type: 'success', 
-          text: `Félicitations ! Vous êtes maintenant connecté à ${teacherData.prenom} ${teacherData.nom} (${teacherData.matiere}). Redirection...` 
+          text: `Félicitations ! Vous êtes maintenant connecté à ${result.teacher.prenom} ${result.teacher.nom}. Redirection...` 
         });
         setTeacherCode("");
         
@@ -118,7 +101,7 @@ export default function AddTeacher() {
           window.location.href = '/student/my-teachers';
         }, 2000);
       } else {
-        setMessage({ type: 'error', text: connectionResult.error || 'Une erreur est survenue lors de la connexion.' });
+        setMessage({ type: 'error', text: result.error || 'Une erreur est survenue lors de la connexion.' });
       }
       
     } catch (error) {
@@ -126,141 +109,6 @@ export default function AddTeacher() {
       setMessage({ type: 'error', text: `Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}. Veuillez réessayer.` });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const validateTeacherCode = async (code: string) => {
-    try {
-      // TODO: Remplacer par une vraie requête Supabase
-      // const { data, error } = await supabase
-      //   .from('teacher_codes')
-      //   .select(`
-      //     teacher_id,
-      //     expires_at,
-      //     teachers:teacher_id (
-      //       id,
-      //       user_metadata->nom,
-      //       user_metadata->prenom,
-      //       user_metadata->matiere
-      //     )
-      //   `)
-      //   .eq('code', code)
-      //   .eq('is_used', false)
-      //   .gt('expires_at', new Date().toISOString())
-      //   .single();
-
-      // Simulation pour les tests
-      console.log('Validation du code:', code);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // En mode test/développement, accepter tous les codes qui respectent le format
-      // Format valide: 6-10 caractères alphanumériques
-      const codeRegex = /^[A-Z0-9]{6,10}$/i;
-      const normalizedCode = code.toUpperCase().trim();
-      
-      if (!codeRegex.test(normalizedCode)) {
-        console.log('Code ne respecte pas le format requis');
-        return null;
-      }
-      
-      // Codes de test prédéfinis avec des professeurs spécifiques
-      const predefinedCodes = {
-        'ABC123': { id: '1', prenom: 'Marie', nom: 'Dupont', matiere: 'Mathématiques' },
-        'DEF456': { id: '2', prenom: 'Pierre', nom: 'Martin', matiere: 'Physique' },
-        'GHI789': { id: '3', prenom: 'Sophie', nom: 'Durand', matiere: 'Français' }
-      };
-      
-      // Si c'est un code prédéfini, utiliser les données spécifiques
-      if (predefinedCodes[normalizedCode as keyof typeof predefinedCodes]) {
-        const result = predefinedCodes[normalizedCode as keyof typeof predefinedCodes];
-        console.log('Code prédéfini trouvé:', result);
-        return result;
-      }
-      
-      // Pour tous les autres codes valides, générer un professeur aléatoire
-      const prenoms = ['Julie', 'Thomas', 'Claire', 'Antoine', 'Isabelle', 'Maxime', 'Sarah', 'Nicolas', 'Emma', 'Lucas'];
-      const noms = ['Lambert', 'Bernard', 'Moreau', 'Roux', 'Petit', 'Garcia', 'Leroy', 'Fontaine', 'Rousseau', 'Vincent'];
-      const matieres = ['Anglais', 'Histoire', 'Chimie', 'Biologie', 'Espagnol', 'Allemand', 'Géographie', 'Philosophie', 'Arts', 'Informatique'];
-      
-      // Utiliser le code comme seed pour générer des données cohérentes
-      const codeSum = normalizedCode.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      
-      const generatedTeacher = {
-        id: `generated_${normalizedCode}`,
-        prenom: prenoms[codeSum % prenoms.length],
-        nom: noms[(codeSum * 2) % noms.length],
-        matiere: matieres[(codeSum * 3) % matieres.length]
-      };
-      
-      console.log('Professeur généré pour le code:', generatedTeacher);
-      return generatedTeacher;
-    } catch (error) {
-      console.error('Erreur dans validateTeacherCode:', error);
-      throw error;
-    }
-  };
-
-  const createStudentTeacherConnection = async (studentId: string, teacherData: any) => {
-    try {
-      console.log('Création de connexion pour:', { studentId, teacherData });
-      
-      // TODO: Remplacer par une vraie insertion Supabase
-      // const { data, error } = await supabase
-      //   .from('student_teacher_connections')
-      //   .insert({
-      //     student_id: studentId,
-      //     teacher_id: teacherData.id,
-      //     connected_at: new Date().toISOString(),
-      //     status: 'active'
-      //   });
-      
-      // if (error) throw error;
-
-      // Vérifications de base
-      if (!studentId) {
-        return { success: false, error: 'Utilisateur non connecté' };
-      }
-      
-      if (!teacherData || !teacherData.id) {
-        return { success: false, error: 'Données professeur invalides' };
-      }
-
-      // Marquer le code comme utilisé
-      // await supabase
-      //   .from('teacher_codes')
-      //   .update({ is_used: true, used_at: new Date().toISOString() })
-      //   .eq('code', teacherCode);
-
-      // Simulation
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Sauvegarde en localStorage pour la persistance
-      const existingTeachers = JSON.parse(localStorage.getItem(`connectedTeachers_${studentId}`) || '[]');
-      const newTeacher = {
-        id: teacherData.id,
-        nom: teacherData.nom,
-        prenom: teacherData.prenom,
-        matiere: teacherData.matiere,
-        connected_at: new Date().toISOString()
-      };
-      
-      // Vérifier si le professeur n'est pas déjà connecté
-      const alreadyConnected = existingTeachers.find((t: any) => t.id === teacherData.id);
-      if (alreadyConnected) {
-        return { success: false, error: 'Vous êtes déjà connecté à ce professeur' };
-      }
-      
-      existingTeachers.push(newTeacher);
-      localStorage.setItem(`connectedTeachers_${studentId}`, JSON.stringify(existingTeachers));
-      
-      // Ajouter le professeur à la liste locale pour l'affichage immédiat
-      setConnectedTeachers(prev => [...prev, newTeacher]);
-
-      console.log('Connexion créée avec succès et sauvegardée dans localStorage');
-      return { success: true };
-    } catch (error) {
-      console.error('Erreur lors de la création de la connexion:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Impossible de créer la connexion' };
     }
   };
 
@@ -352,8 +200,7 @@ export default function AddTeacher() {
                 disabled={submitting}
               />
               <p className="text-sm text-gray-500 mt-2">
-                Format: 6 à 10 caractères alphanumériques (lettres et chiffres). 
-                <span className="text-blue-600 font-medium">Exemple: ABC123, YSJ28HPQA</span>
+                Le code d'invitation fourni par votre professeur (6 à 10 caractères).
               </p>
             </div>
 
@@ -436,19 +283,15 @@ export default function AddTeacher() {
             <div className="flex items-start">
               <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
                 <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2m0 0V1a1 1 0 011-1h4a1 1 0 011 1v3M7 4V1a1 1 0 00-1 1v2m8 0V1a1 1 0 011-1h2a1 1 0 011 1v3m0 0v3a1 1 0 01-1 1H8a1 1 0 01-1-1V4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800 mb-2">Codes de test</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Pour tester la fonctionnalité :
+                <h3 className="font-semibold text-gray-800 mb-2">Code sécurisé</h3>
+                <p className="text-sm text-gray-600">
+                  Chaque code est unique et permet d'établir une connexion sécurisée 
+                  entre vous et votre professeur.
                 </p>
-                <div className="text-xs space-y-1">
-                  <div className="bg-white p-1 rounded border">ABC123 - Marie Dupont (Maths)</div>
-                  <div className="bg-white p-1 rounded border">DEF456 - Pierre Martin (Physique)</div>
-                  <div className="bg-white p-1 rounded border">GHI789 - Sophie Durand (Français)</div>
-                </div>
               </div>
             </div>
           </div>
@@ -468,8 +311,8 @@ export default function AddTeacher() {
             </div>
           ) : (
             <div className="space-y-4">
-              {connectedTeachers.map((teacher, index) => (
-                <div key={teacher.id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {connectedTeachers.map((item: any, index: number) => (
+                <div key={item.relation_id || index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
@@ -479,11 +322,11 @@ export default function AddTeacher() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-800">
-                          {teacher.prenom} {teacher.nom}
+                          {item.teacher.prenom} {item.teacher.nom}
                         </h4>
-                        <p className="text-sm text-gray-600">{teacher.matiere}</p>
+                        <p className="text-sm text-gray-600">{item.teacher.email}</p>
                         <p className="text-xs text-gray-500">
-                          Connecté le {new Date(teacher.connected_at).toLocaleDateString('fr-FR')}
+                          Connecté le {new Date(item.connected_at).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                     </div>

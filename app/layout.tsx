@@ -2,7 +2,7 @@ import './globals.css';
 import Navbar from '../components/Navbar';
 
 export const metadata = {
-  title: 'Waiting List',
+  title: 'Akademos',
   description: 'Minimal Next.js app',
 };
 

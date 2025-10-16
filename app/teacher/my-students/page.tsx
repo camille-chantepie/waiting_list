@@ -13,47 +13,74 @@ export default function MyStudents() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
-  const [studentName, setStudentName] = useState("");
+  const [teacherCode, setTeacherCode] = useState<string | null>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [studentsCount, setStudentsCount] = useState(0);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        await loadTeacherCode(session.user.id);
+        await loadStudents(session.user.id);
+      }
       setLoading(false);
     };
     getSession();
   }, []);
+
+  const loadTeacherCode = async (userId: string) => {
+    try {
+      const { data: teacher, error } = await supabase
+        .from('teachers')
+        .select('code_invitation')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading teacher code:', error);
+        return;
+      }
+
+      if (teacher?.code_invitation) {
+        setTeacherCode(teacher.code_invitation);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const loadStudents = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/relations?teacher_id=${userId}`);
+      if (!response.ok) {
+        console.error('Error loading students');
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('Students loaded:', result);
+      
+      setStudents(result.data || []);
+      setStudentsCount(result.data?.length || 0);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
 
-  const generateStudentCode = () => {
-    // Generate a random 9-character code
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 9; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    setGeneratedCode(code);
-  };
-
-  const handleGenerateCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    generateStudentCode();
-  };
-
   const handleCloseModal = () => {
     setShowModal(false);
-    setGeneratedCode(null);
-    setStudentName("");
   };
 
   const copyToClipboard = () => {
-    if (generatedCode) {
-      navigator.clipboard.writeText(generatedCode);
+    if (teacherCode) {
+      navigator.clipboard.writeText(teacherCode);
       alert("Code copié dans le presse-papiers !");
     }
   };
@@ -119,62 +146,82 @@ export default function MyStudents() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              Gestion des étudiants
-            </h2>
-            <p className="text-gray-600">
-              Gérez vos étudiants et générez des codes d&apos;inscription
-            </p>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+            Gestion des étudiants
+          </h2>
+          <p className="text-gray-600">
+            Partagez votre code unique avec vos étudiants pour qu&apos;ils puissent se connecter à vous
+          </p>
+        </div>
+
+        {/* Mon code unique */}
+        <div className="mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold mb-2">Mon code d&apos;invitation unique</h3>
+              <p className="text-indigo-100 mb-6">
+                Partagez ce code avec tous vos étudiants. Ils pourront l&apos;utiliser pour se connecter à vous.
+              </p>
+              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 inline-block">
+                {teacherCode ? (
+                  <div className="flex items-center space-x-4">
+                    <div className="text-4xl font-bold font-mono tracking-wider">
+                      {teacherCode}
+                    </div>
+                    <button
+                      onClick={copyToClipboard}
+                      className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center"
+                    >
+                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copier
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-2xl">Chargement...</div>
+                )}
+              </div>
+            </div>
+            <div className="ml-8">
+              <button
+                onClick={() => setShowModal(true)}
+                className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
+              >
+                Comment ça marche ?
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center"
-          >
-            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Générer un code étudiant
-          </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-3xl">👥</span>
               <span className="text-xs text-gray-500 bg-indigo-100 px-2 py-1 rounded">Total</span>
             </div>
-            <div className="text-2xl font-bold text-gray-800 mb-1">0</div>
-            <div className="text-gray-600 text-sm">Étudiants actifs</div>
+            <div className="text-2xl font-bold text-gray-800 mb-1">{studentsCount}</div>
+            <div className="text-gray-600 text-sm">Étudiants connectés</div>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-3xl">🆕</span>
-              <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">Ce mois</span>
+              <span className="text-3xl">💬</span>
+              <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">Messages</span>
             </div>
             <div className="text-2xl font-bold text-gray-800 mb-1">0</div>
-            <div className="text-gray-600 text-sm">Nouveaux étudiants</div>
+            <div className="text-gray-600 text-sm">Non lus</div>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-3xl">🔐</span>
-              <span className="text-xs text-gray-500 bg-orange-100 px-2 py-1 rounded">Générés</span>
+              <span className="text-3xl">📅</span>
+              <span className="text-xs text-gray-500 bg-orange-100 px-2 py-1 rounded">Cette semaine</span>
             </div>
             <div className="text-2xl font-bold text-gray-800 mb-1">0</div>
-            <div className="text-gray-600 text-sm">Codes disponibles</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-3xl">⏰</span>
-              <span className="text-xs text-gray-500 bg-purple-100 px-2 py-1 rounded">En attente</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-800 mb-1">0</div>
-            <div className="text-gray-600 text-sm">Codes non utilisés</div>
+            <div className="text-gray-600 text-sm">Cours planifiés</div>
           </div>
         </div>
 
@@ -192,53 +239,67 @@ export default function MyStudents() {
               </div>
             </div>
 
-            <div className="text-center py-16 text-gray-500">
-              <svg className="h-24 w-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <p className="text-lg font-medium mb-2">Aucun étudiant</p>
-              <p className="text-sm mb-4">Générez un code pour inviter votre premier étudiant</p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="text-indigo-600 hover:text-indigo-800 font-medium"
-              >
-                Générer un code →
-              </button>
+            <div>
+              {studentsCount === 0 ? (
+                <div className="text-center py-16 text-gray-500">
+                  <svg className="h-24 w-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-lg font-medium mb-2">Aucun étudiant</p>
+                  <p className="text-sm mb-4">Partagez votre code d&apos;invitation pour inviter vos premiers étudiants</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {students.map((relation: any) => (
+                    <div key={relation.relation_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <span className="text-xl font-bold text-indigo-600">
+                            {relation.student.prenom.charAt(0)}{relation.student.nom.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            {relation.student.prenom} {relation.student.nom}
+                          </div>
+                          <div className="text-sm text-gray-600">{relation.student.email}</div>
+                          <div className="text-xs text-gray-500">
+                            Connecté le {new Date(relation.connected_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Link 
+                          href={`/teacher/messages?student=${relation.student.id}`}
+                          className="text-indigo-600 hover:text-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50"
+                        >
+                          Message
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Recent Codes */}
-            <div className="bg-white rounded-2xl shadow-lg border p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Codes récents</h3>
-              <div className="text-center py-8 text-gray-500">
-                <svg className="h-16 w-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-                <p className="text-sm">Aucun code généré</p>
-              </div>
-            </div>
-
             {/* Info Card */}
             <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-6 text-white">
               <h3 className="text-lg font-semibold mb-4">Comment ça marche ?</h3>
               <ul className="space-y-3 text-sm text-indigo-100">
                 <li className="flex items-start">
                   <span className="mr-2">1.</span>
-                  <span>Générez un code unique pour chaque nouvel étudiant</span>
+                  <span>Partagez votre code unique avec vos étudiants</span>
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">2.</span>
-                  <span>Partagez le code avec votre étudiant</span>
+                  <span>Ils utilisent ce code pour se connecter à vous</span>
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">3.</span>
-                  <span>L&apos;étudiant s&apos;inscrit avec ce code</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">4.</span>
-                  <span>Vous êtes automatiquement connectés !</span>
+                  <span>Vous pouvez ensuite communiquer et gérer leurs cours</span>
                 </li>
               </ul>
             </div>
@@ -254,7 +315,7 @@ export default function MyStudents() {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-2">Astuce</h4>
                   <p className="text-sm text-gray-600">
-                    Vous pouvez générer plusieurs codes à l&apos;avance et les distribuer lors de vos sessions.
+                    Un seul code pour tous vos étudiants ! Vous pouvez le partager sur vos réseaux sociaux, votre site web, ou par email.
                   </p>
                 </div>
               </div>
@@ -263,13 +324,13 @@ export default function MyStudents() {
         </div>
       </main>
 
-      {/* Modal for generating code */}
+      {/* Modal avec instructions */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
             <div className="p-6 border-b">
               <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold text-gray-800">Générer un code étudiant</h3>
+                <h3 className="text-2xl font-bold text-gray-800">Comment utiliser votre code ?</h3>
                 <button
                   onClick={handleCloseModal}
                   className="text-gray-400 hover:text-gray-600"
@@ -281,74 +342,54 @@ export default function MyStudents() {
               </div>
             </div>
             
-            {!generatedCode ? (
-              <form onSubmit={handleGenerateCode} className="p-6 space-y-6">
-                <div>
-                  <label htmlFor="studentName" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nom de l&apos;étudiant (optionnel)
-                  </label>
-                  <input
-                    type="text"
-                    id="studentName"
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                    placeholder="Ex: Marie Dupont"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    Cela vous aidera à identifier le code plus tard
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  Générer le code
-                </button>
-              </form>
-            ) : (
-              <div className="p-6 space-y-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <h4 className="text-xl font-bold text-gray-800 mb-2">Code généré avec succès !</h4>
-                  <p className="text-gray-600 mb-6">Partagez ce code avec votre étudiant</p>
-                  
-                  <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 mb-6">
-                    <p className="text-sm text-gray-600 mb-2">Code d&apos;inscription :</p>
-                    <div className="text-3xl font-bold text-indigo-600 font-mono tracking-wider mb-4">
-                      {generatedCode}
-                    </div>
-                    <button
-                      onClick={copyToClipboard}
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center justify-center w-full"
-                    >
-                      <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      Copier le code
-                    </button>
-                  </div>
-
-                  {studentName && (
-                    <p className="text-sm text-gray-600 mb-4">
-                      Code pour : <span className="font-semibold">{studentName}</span>
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleCloseModal}
-                  className="w-full bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  Fermer
-                </button>
+            <div className="p-6 space-y-6">
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 text-indigo-600 font-bold">1</span>
+                  Copiez votre code unique
+                </h4>
+                <p className="text-gray-600 text-sm ml-11">
+                  Cliquez sur le bouton "Copier" à côté de votre code en haut de la page.
+                </p>
               </div>
-            )}
+
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 text-indigo-600 font-bold">2</span>
+                  Partagez-le avec vos étudiants
+                </h4>
+                <p className="text-gray-600 text-sm ml-11">
+                  Envoyez votre code par email, SMS, ou partagez-le sur vos réseaux sociaux.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3 text-indigo-600 font-bold">3</span>
+                  Ils s&apos;inscrivent
+                </h4>
+                <p className="text-gray-600 text-sm ml-11">
+                  Vos étudiants créent un compte et entrent votre code pour se connecter à vous.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3 text-green-600 font-bold">✓</span>
+                  C&apos;est fait !
+                </h4>
+                <p className="text-gray-600 text-sm ml-11">
+                  Vous verrez apparaître vos étudiants dans cette liste et pourrez communiquer avec eux.
+                </p>
+              </div>
+
+              <button
+                onClick={handleCloseModal}
+                className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+              >
+                J&apos;ai compris
+              </button>
+            </div>
           </div>
         </div>
       )}
