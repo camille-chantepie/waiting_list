@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkSubscriptionLimit } from "@/utils/subscriptionCheck";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -101,8 +102,28 @@ export async function POST(req: NextRequest) {
 
     console.log('Teacher found:', teacher);
 
-    // Étape 3: Vérifier si la relation existe déjà
-    console.log('Step 3: Checking existing relation...');
+    // Étape 3: Vérifier l'abonnement du professeur
+    console.log('Step 3: Checking teacher subscription...');
+    const subscriptionStatus = await checkSubscriptionLimit(teacher.id);
+    
+    if (!subscriptionStatus.canAddStudent) {
+      console.log('Error: Subscription limit reached or inactive');
+      return NextResponse.json(
+        { 
+          error: subscriptionStatus.message || "Le professeur ne peut pas ajouter de nouveaux élèves.",
+          subscriptionStatus: {
+            currentCount: subscriptionStatus.currentCount,
+            limit: subscriptionStatus.limit
+          }
+        },
+        { status: 403 }
+      );
+    }
+    
+    console.log('Subscription check passed:', subscriptionStatus);
+
+    // Étape 4: Vérifier si la relation existe déjà
+    console.log('Step 4: Checking existing relation...');
     const { data: existingRelation, error: relationCheckError } = await supabase
       .from('teacher_student_relations')
       .select('id, status')
@@ -151,8 +172,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Étape 4: Créer la nouvelle relation
-    console.log('Step 4: Creating new relation...');
+    // Étape 5: Créer la nouvelle relation
+    console.log('Step 5: Creating new relation...');
     const { data: newRelation, error: insertError } = await supabase
       .from('teacher_student_relations')
       .insert({

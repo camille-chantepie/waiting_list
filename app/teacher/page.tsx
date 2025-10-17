@@ -384,7 +384,7 @@ export default function TeacherDashboard() {
             <Link href="/teacher/calendar" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200 relative">
               <span className="text-2xl mr-3">📅</span>
               <div>
-                <div className="font-semibold text-gray-800">Calendrier</div>
+                <div className="font-semibold text-gray-800">Calendrier des cours</div>
                 <div className="text-sm text-gray-600">Gérer mes cours</div>
               </div>
             </Link>
@@ -400,13 +400,6 @@ export default function TeacherDashboard() {
               <div>
                 <div className="font-semibold text-gray-800">Ressources</div>
                 <div className="text-sm text-gray-600">Partager du contenu</div>
-              </div>
-            </Link>
-            <Link href="/teacher/proposals" className="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors border border-yellow-200 relative">
-              <span className="text-2xl mr-3">⏰</span>
-              <div>
-                <div className="font-semibold text-gray-800">Propositions</div>
-                <div className="text-sm text-gray-600">Créneaux proposés</div>
               </div>
             </Link>
             <Link href="/teacher/notes" className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200 relative">

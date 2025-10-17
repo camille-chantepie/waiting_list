@@ -1,0 +1,134 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║         🚀 GUIDE DE DÉPLOIEMENT - AKADEMOS                  ║
+║         Système de Crédit & Prélèvement Automatique         ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📌 IMPORTANT : Ouvrez le fichier COMMENCEZ_ICI.md pour démarrer !
+
+
+═══════════════════════════════════════════════════════════════
+  📋 PLAN EN 4 ÉTAPES (15 minutes)
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│ ÉTAPE 1 : SQL dans Supabase (5 min)                        │
+│ ➜ Fichier : ETAPE_1_SQL.md                                 │
+│                                                             │
+│ ✓ Ouvrir Supabase SQL Editor                               │
+│ ✓ Copier-coller le SQL du système de crédit                │
+│ ✓ Exécuter                                                  │
+│ ✓ Copier-coller le SQL du système de parrainage            │
+│ ✓ Exécuter                                                  │
+│ ✓ Vérifier les colonnes dans Table Editor                  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ ÉTAPE 2 : CRON_SECRET dans Vercel (2 min)                  │
+│ ➜ Fichier : ETAPE_2_VERCEL.md                              │
+│                                                             │
+│ ✓ Aller sur vercel.com                                     │
+│ ✓ Settings → Environment Variables                         │
+│ ✓ Add New :                                                 │
+│   - Name: CRON_SECRET                                       │
+│   - Value: QXVIvvzSksen39iqr2SXwfEyTXjyBDF+9xsK2HQhlWA=   │
+│   - Envs: Production, Preview, Development                 │
+│ ✓ Save                                                      │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ ÉTAPE 3 : Déployer sur GitHub/Vercel (5 min)               │
+│ ➜ Fichier : ETAPE_3_DEPLOY.md                              │
+│                                                             │
+│ ✓ Ouvrir le terminal                                        │
+│ ✓ npm run build (vérifier que ça compile)                  │
+│ ✓ git add .                                                 │
+│ ✓ git commit -m "Add payment system"                       │
+│ ✓ git push origin main                                     │
+│ ✓ Attendre que Vercel déploie (2-3 min)                    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ ÉTAPE 4 : Vérifier & Tester (3 min)                        │
+│ ➜ Fichier : ETAPE_4_VERIFIER.md                            │
+│                                                             │
+│ ✓ Aller sur vercel.com → Cron Jobs                         │
+│ ✓ Vérifier le cron : /api/stripe/monthly-charge            │
+│ ✓ Cliquer sur "Run" pour tester                            │
+│ ✓ Vérifier les logs                                        │
+│ ✓ (Optionnel) Vérifier dans Supabase                       │
+└─────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════
+  ✨ CE QUE VOUS OBTENEZ
+═══════════════════════════════════════════════════════════════
+
+💰 Système de Crédit Prépayé
+   • Rechargement minimum 20€
+   • Solde affiché en temps réel
+   • Alertes automatiques si solde faible
+
+⏰ Prélèvement Automatique
+   • Chaque 1er du mois à minuit
+   • 5€ pour 1 élève + 2€ par élève supplémentaire
+   • Suspension automatique si fonds insuffisants
+
+🎁 Programme de Parrainage
+   • Code unique par professeur
+   • 5€ de bonus au parrain
+   • Stats de parrainage visibles
+
+🔒 Sécurité Totale
+   • API protégée par CRON_SECRET
+   • Webhooks Stripe sécurisés
+   • Codes de parrainage uniques
+
+
+═══════════════════════════════════════════════════════════════
+  📚 FICHIERS DISPONIBLES
+═══════════════════════════════════════════════════════════════
+
+Guide Étape par Étape :
+  → COMMENCEZ_ICI.md ................. Vue d'ensemble
+  → ETAPE_1_SQL.md ................... Migrations Supabase
+  → ETAPE_2_VERCEL.md ................ Config Vercel
+  → ETAPE_3_DEPLOY.md ................ Déploiement
+  → ETAPE_4_VERIFIER.md .............. Vérification
+
+Documentation Complète :
+  → DEPLOIEMENT_GUIDE.md ............. Guide détaillé
+  → CREDIT_SYSTEM.md ................. Système de crédit
+  → CRON_SETUP.md .................... Config technique
+  → SYSTEM_OVERVIEW.md ............... Vue d'ensemble
+
+Configuration :
+  → vercel.json ...................... Config Vercel Cron
+  → test-cron.sh ..................... Script de test
+  → database_credit_system.sql ....... SQL crédit
+  → database_referral_system.sql ..... SQL parrainage
+
+
+═══════════════════════════════════════════════════════════════
+  🆘 BESOIN D'AIDE ?
+═══════════════════════════════════════════════════════════════
+
+Chaque fichier ETAPE_X contient une section "🆘 En cas de 
+problème" avec les solutions aux erreurs courantes.
+
+
+═══════════════════════════════════════════════════════════════
+  ▶️  COMMENCER MAINTENANT
+═══════════════════════════════════════════════════════════════
+
+    👉 Ouvrez le fichier COMMENCEZ_ICI.md
+
+    Ou directement ETAPE_1_SQL.md pour démarrer !
+
+
+═══════════════════════════════════════════════════════════════
+
+Bon déploiement ! 🚀
+
+Date : 16 octobre 2025

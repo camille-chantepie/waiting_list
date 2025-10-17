@@ -239,7 +239,7 @@ export default function TeacherDashboard() {
             <Link href="/teacher/calendar" className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200">
               <span className="text-2xl mr-3">📅</span>
               <div>
-                <div className="font-semibold text-gray-800">Calendrier</div>
+                <div className="font-semibold text-gray-800">Calendrier des cours</div>
                 <div className="text-sm text-gray-600">Gérer mes cours</div>
               </div>
             </Link>

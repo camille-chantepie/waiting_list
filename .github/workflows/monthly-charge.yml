@@ -1,0 +1,39 @@
+name: Monthly Subscription Charge
+
+on:
+  schedule:
+    # S'exécute le 1er de chaque mois à 2h du matin (UTC)
+    - cron: '0 2 1 * *'
+  
+  # Permet de lancer manuellement le workflow pour tester
+  workflow_dispatch:
+
+jobs:
+  charge-subscriptions:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Call Monthly Charge API
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST ${{ secrets.APP_URL }}/api/stripe/monthly-charge \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Monthly charge failed with status $http_code"
+            exit 1
+          fi
+          
+          echo "✅ Monthly charge completed successfully"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "⚠️ Monthly charge workflow failed!"
+          echo "Please check the logs and verify the CRON_SECRET and APP_URL secrets are configured correctly."

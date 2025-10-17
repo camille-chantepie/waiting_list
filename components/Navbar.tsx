@@ -30,24 +30,14 @@ export default function Navbar() {
         </button>
 
         <div className="hidden md:flex items-center gap-6">
-          <a 
-            href="mailto:camille.chantepie@hec.edu" 
-            className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            Contact
-          </a>
+          {/* Navigation items can be added here */}
         </div>
       </nav>
 
       {open && (
         <div className="md:hidden border-t border-black/5 bg-white/90 backdrop-blur">
           <div className="px-4 py-3 space-y-2">
-            <a 
-              href="mailto:camille.chantepie@hec.edu" 
-              className="block text-sm text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              Contact
-            </a>
+            {/* Mobile navigation items can be added here */}
           </div>
         </div>
       )}
